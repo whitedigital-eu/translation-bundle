@@ -27,7 +27,7 @@ class TranslationBundle extends AbstractBundle
     ];
 
     private const PATHS = [
-        '%kernel.project_dir%/vendor/whitedigital-eu/translation/src/ApiResource',
+        '%kernel.project_dir%/vendor/whitedigital-eu/translation-bundle/src/ApiResource',
     ];
 
     public static function getConfig(string $package, ContainerBuilder $builder): array
