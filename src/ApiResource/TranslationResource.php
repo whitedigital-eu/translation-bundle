@@ -24,6 +24,11 @@ use WhiteDigital\Translation\Entity\Translation;
                 requirements: ['id' => '\d+', ],
                 normalizationContext: ['groups' => [self::READ, ], ],
             ),
+            new Get(
+                uriTemplate: '/translations/list',
+                normalizationContext: ['groups' => [self::LIST, ], ],
+                write: false,
+            ),
             new GetCollection(
                 normalizationContext: ['groups' => [self::READ, ], ],
             ),
@@ -49,6 +54,7 @@ class TranslationResource extends BaseResource
 
     public const READ = self::PREFIX . 'read';
     public const WRITE = self::PREFIX . 'write';
+    public const LIST = self::PREFIX . 'list';
 
     #[ApiProperty(identifier: true)]
     #[Groups([self::READ, ])]
@@ -71,4 +77,10 @@ class TranslationResource extends BaseResource
 
     #[Groups([self::READ, self::WRITE, ])]
     public ?string $translation = null;
+
+    #[Groups([self::READ, self::WRITE, ])]
+    public bool $isActive = true;
+
+    #[Groups([self::LIST, ])]
+    public array $translations = [];
 }

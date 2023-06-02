@@ -28,6 +28,9 @@ class Translation extends BaseEntity
     #[ORM\Column(type: Types::TEXT)]
     protected ?string $translation = null;
 
+    #[ORM\Column(options: ['default' => true])]
+    protected bool $isActive = true;
+
     public function getDomain(): ?string
     {
         return $this->domain;
@@ -72,6 +75,18 @@ class Translation extends BaseEntity
     public function setTranslation(?string $translation): self
     {
         $this->translation = $translation;
+
+        return $this;
+    }
+
+    public function getisActive(): bool
+    {
+        return $this->isActive;
+    }
+
+    public function setIsActive(bool $isActive): self
+    {
+        $this->isActive = $isActive;
 
         return $this;
     }
