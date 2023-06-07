@@ -6,6 +6,7 @@ use ApiPlatform\Exception\ResourceClassNotFoundException;
 use ReflectionException;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
+use Symfony\Contracts\Service\Attribute\Required;
 use WhiteDigital\EntityResourceMapper\DataProcessor\AbstractDataProcessor;
 use WhiteDigital\EntityResourceMapper\Entity\BaseEntity;
 use WhiteDigital\EntityResourceMapper\Resource\BaseResource;
