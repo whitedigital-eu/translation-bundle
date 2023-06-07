@@ -36,4 +36,16 @@ class TranslationRepository extends ServiceEntityRepository
 
         return array_merge(array_column($result, 'domain'));
     }
+
+    public function getLocales(): array
+    {
+        $result = $this->createQueryBuilder('t')
+            ->distinct()
+            ->select('t.locale')
+            ->where('t.isActive = true')
+            ->getQuery()
+            ->getResult();
+
+        return array_merge(array_column($result, 'locale'));
+    }
 }

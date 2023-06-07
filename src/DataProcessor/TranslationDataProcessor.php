@@ -3,8 +3,10 @@
 namespace WhiteDigital\Translation\DataProcessor;
 
 use ApiPlatform\Exception\ResourceClassNotFoundException;
+use Doctrine\DBAL\Exception\UniqueConstraintViolationException;
 use ReflectionException;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Symfony\Component\HttpKernel\Exception\PreconditionFailedHttpException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use Symfony\Contracts\Service\Attribute\Required;
 use WhiteDigital\EntityResourceMapper\DataProcessor\AbstractDataProcessor;
@@ -13,6 +15,8 @@ use WhiteDigital\EntityResourceMapper\Resource\BaseResource;
 use WhiteDigital\Translation\ApiResource\TranslationResource;
 use WhiteDigital\Translation\Entity\Translation;
 use WhiteDigital\Translation\Event\TranslationUpdatedEvent;
+
+use function preg_match;
 
 class TranslationDataProcessor extends AbstractDataProcessor
 {
@@ -31,10 +35,7 @@ class TranslationDataProcessor extends AbstractDataProcessor
 
     protected function createEntity(BaseResource $resource, array $context, ?BaseEntity $existingEntity = null): Translation
     {
-        $entity = Translation::create($resource, $context, $existingEntity);
-        $this->dispatcher->dispatch(new TranslationUpdatedEvent(), TranslationUpdatedEvent::EVENT);
-
-        return $entity;
+        return Translation::create($resource, $context, $existingEntity);
     }
 
     /**
@@ -45,5 +46,20 @@ class TranslationDataProcessor extends AbstractDataProcessor
     protected function createResource(BaseEntity $entity, array $context): TranslationResource
     {
         return TranslationResource::create($entity, $context);
+    }
+
+    protected function flushAndRefresh(BaseEntity $entity): void
+    {
+        $this->entityManager->persist($entity);
+
+        try {
+            $this->entityManager->flush();
+        } catch (UniqueConstraintViolationException $exception) {
+            preg_match('/DETAIL: (.*)/', $exception->getMessage(), $matches);
+            throw new PreconditionFailedHttpException($this->translator->trans('record_already_exists', ['%detail%' => $matches[1]], domain: 'EntityResourceMapper'), $exception);
+        }
+
+        $this->dispatcher->dispatch(new TranslationUpdatedEvent(), TranslationUpdatedEvent::EVENT);
+        $this->entityManager->refresh($entity);
     }
 }

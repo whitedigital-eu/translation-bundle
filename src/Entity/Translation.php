@@ -12,6 +12,7 @@ use WhiteDigital\Translation\Repository\TranslationRepository;
 
 #[ORM\Entity(repositoryClass: TranslationRepository::class)]
 #[Mapping(TranslationResource::class)]
+#[ORM\UniqueConstraint(fields: ['domain', 'locale', 'key', 'translation', 'isActive', ])]
 class Translation extends BaseEntity
 {
     use Id;
