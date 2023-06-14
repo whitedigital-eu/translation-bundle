@@ -46,7 +46,7 @@ class TranslationDataProvider extends AbstractDataProvider
         $translations = $this->entityManager->getRepository($this->getEntityClass($operation))->findBy(['isActive' => true]);
         $result = [];
         foreach ($translations as $translation) {
-            $result[$translation->getLocale()][$translation->getDomain()][$translation->getKey()] = $translation->getTranslation();
+            $result[$translation->getDomain()][$translation->getKey()][$translation->getLocale()] = $translation->getTranslation();
         }
 
         $resource = new TranslationResource();
