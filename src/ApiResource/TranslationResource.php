@@ -2,14 +2,19 @@
 
 namespace WhiteDigital\Translation\ApiResource;
 
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Serializer\Filter\GroupFilter;
 use Symfony\Component\Serializer\Annotation\Groups;
 use WhiteDigital\EntityResourceMapper\Attribute\Mapping;
+use WhiteDigital\EntityResourceMapper\Filters\ResourceBooleanFilter;
+use WhiteDigital\EntityResourceMapper\Filters\ResourceOrderFilter;
+use WhiteDigital\EntityResourceMapper\Filters\ResourceSearchFilter;
 use WhiteDigital\EntityResourceMapper\Resource\BaseResource;
 use WhiteDigital\EntityResourceMapper\UTCDateTimeImmutable;
 use WhiteDigital\Translation\DataProcessor\TranslationDataProcessor;
@@ -46,6 +51,10 @@ use WhiteDigital\Translation\Entity\Translation;
         provider: TranslationDataProvider::class,
         processor: TranslationDataProcessor::class,
     ),
+    ApiFilter(GroupFilter::class, arguments: ['parameterName' => 'groups', 'overrideDefaultGroups' => false, ]),
+    ApiFilter(ResourceBooleanFilter::class, properties: ['isActive', ]),
+    ApiFilter(ResourceOrderFilter::class, properties: ['domain', 'locale', 'key', 'translation', ]),
+    ApiFilter(ResourceSearchFilter::class, properties: ['domain', 'locale', 'key', 'translation', ]),
 ]
 #[Mapping(Translation::class)]
 class TranslationResource extends BaseResource
