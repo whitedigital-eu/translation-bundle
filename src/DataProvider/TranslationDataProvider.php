@@ -11,6 +11,8 @@ use WhiteDigital\EntityResourceMapper\Entity\BaseEntity;
 use WhiteDigital\Translation\ApiResource\TranslationResource;
 
 use function array_key_exists;
+use function array_shift;
+use function explode;
 use function in_array;
 
 class TranslationDataProvider extends AbstractDataProvider
@@ -21,7 +23,7 @@ class TranslationDataProvider extends AbstractDataProvider
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): object|array|null
     {
         if (in_array(TranslationResource::LIST, $operation->getNormalizationContext()['groups'] ?? [], true)) {
-            return $this->getList($operation);
+            return $this->getList($operation, $uriVariables['locale']);
         }
 
         if (array_key_exists('id', $uriVariables)) {
@@ -41,17 +43,45 @@ class TranslationDataProvider extends AbstractDataProvider
         return TranslationResource::create($entity, $context);
     }
 
-    protected function getList(Operation $operation): TranslationResource
+    protected function getList(Operation $operation, string $locale): TranslationResource
     {
-        $translations = $this->entityManager->getRepository($this->getEntityClass($operation))->findBy(['isActive' => true]);
+        $translations = $this->entityManager->getRepository($this->getEntityClass($operation))->findBy(['isActive' => true, 'locale' => $locale]);
         $result = [];
         foreach ($translations as $translation) {
-            $result[$translation->getDomain()][$translation->getKey()][$translation->getLocale()] = $translation->getTranslation();
+            $result[$translation->getDomain()][$translation->getKey()] = $translation->getTranslation();
+        }
+
+        foreach ($result as $domain => $keys) {
+            $result[$domain] = $this->convert($keys);
         }
 
         $resource = new TranslationResource();
         $resource->translations = $result;
 
         return $resource;
+    }
+
+    private function convert(array $input): array
+    {
+        $result = [];
+
+        foreach ($input as $dotted => $translation) {
+            $keys = explode('.', $dotted);
+            $current = &$result[array_shift($keys)];
+
+            foreach ($keys as $key) {
+                if (isset($current[$key]) && $translation === $current[$key]) {
+                    $current[$key] = [];
+                }
+
+                $current = &$current[$key];
+            }
+
+            if (null === $current) {
+                $current = $translation;
+            }
+        }
+
+        return $result;
     }
 }

@@ -7,10 +7,12 @@ use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Link;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Serializer\Filter\GroupFilter;
 use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 use WhiteDigital\EntityResourceMapper\Attribute\Mapping;
 use WhiteDigital\EntityResourceMapper\Filters\ResourceBooleanFilter;
 use WhiteDigital\EntityResourceMapper\Filters\ResourceOrderFilter;
@@ -30,7 +32,10 @@ use WhiteDigital\Translation\Entity\Translation;
                 normalizationContext: ['groups' => [self::READ, ], ],
             ),
             new Get(
-                uriTemplate: '/translations/list',
+                uriTemplate: '/translations/list/{locale}',
+                uriVariables: [
+                    'locale' => new Link(fromClass: self::class, identifiers: ['locale']),
+                ],
                 normalizationContext: ['groups' => [self::LIST, ], ],
                 write: false,
             ),
@@ -76,6 +81,7 @@ class TranslationResource extends BaseResource
     public ?UTCDateTimeImmutable $updatedAt = null;
 
     #[Groups([self::READ, self::WRITE, ])]
+    #[Assert\Type(type: 'alnum', message: 'Only alphanumeric characters allowed')]
     public ?string $domain = null;
 
     #[Groups([self::READ, self::WRITE, ])]
