@@ -82,15 +82,21 @@ class TranslationResource extends BaseResource
 
     #[Groups([self::READ, self::WRITE, ])]
     #[Assert\Type(type: 'alnum', message: 'Only alphanumeric characters allowed')]
+    #[Assert\NotBlank]
     public ?string $domain = null;
 
     #[Groups([self::READ, self::WRITE, ])]
+    #[Assert\Type(type: 'alpha', message: 'Only letters allowed')]
+    #[Assert\NotBlank]
     public ?string $locale = null;
 
     #[Groups([self::READ, self::WRITE, ])]
+    #[Assert\Regex(pattern: '/^[\w\.]+$/i')]
+    #[Assert\NotBlank]
     public ?string $key = null;
 
     #[Groups([self::READ, self::WRITE, ])]
+    #[Assert\NotBlank]
     public ?string $translation = null;
 
     #[Groups([self::READ, self::WRITE, ])]
