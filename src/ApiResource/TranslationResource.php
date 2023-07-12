@@ -91,7 +91,7 @@ class TranslationResource extends BaseResource
     public ?string $locale = null;
 
     #[Groups([self::READ, self::WRITE, ])]
-    #[Assert\Regex(pattern: '/^(?i)[a-z0-9][a-z0-9 .]*(?<=[a-z0-9])$/i')]
+    #[Assert\Regex(pattern: '/^(?i)[a-z0-9][a-z0-9 ._]*(?<=[a-z0-9])$/i')]
     #[Assert\NotBlank]
     public ?string $key = null;
 
