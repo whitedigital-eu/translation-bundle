@@ -13,10 +13,23 @@
     "require": {
         "php": ">=8.2.0",
         "api-platform/core": "^3",
+        "doctrine/dbal": "*",
+        "doctrine/doctrine-bundle": "*",
+        "doctrine/orm": "*",
+        "doctrine/persistence": "*",
+        "symfony/config": "*",
+        "symfony/console": "*",
+        "symfony/dependency-injection": "*",
+        "symfony/event-dispatcher": "*",
+        "symfony/filesystem": "*",
+        "symfony/http-kernel": "*",
+        "symfony/serializer": "*",
+        "symfony/service-contracts": "*",
+        "symfony/translation": "*",
+        "symfony/validator": "*",
         "whitedigital-eu/entity-resource-mapper-bundle": "^0.23"
     },
     "require-dev": {
-        "doctrine/doctrine-fixtures-bundle": "*",
         "friendsofphp/php-cs-fixer": "*",
         "roave/security-advisories": "dev-latest",
         "whitedigital-eu/config-pack": "^2.1"
@@ -33,7 +46,7 @@
     },
     "extra": {
         "branch-alias": {
-            "dev-main": "0.x-dev"
+            "dev-main": "0.1.x-dev"
         }
     }
 }
