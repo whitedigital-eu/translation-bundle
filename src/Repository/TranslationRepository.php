@@ -30,7 +30,6 @@ class TranslationRepository extends ServiceEntityRepository
         $result = $this->createQueryBuilder('t')
             ->distinct()
             ->select('t.domain')
-            ->where('t.isActive = true')
             ->getQuery()
             ->getResult();
 
@@ -42,7 +41,6 @@ class TranslationRepository extends ServiceEntityRepository
         $result = $this->createQueryBuilder('t')
             ->distinct()
             ->select('t.locale')
-            ->where('t.isActive = true')
             ->getQuery()
             ->getResult();
 

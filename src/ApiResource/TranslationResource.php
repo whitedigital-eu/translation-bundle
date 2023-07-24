@@ -14,7 +14,6 @@ use ApiPlatform\Serializer\Filter\GroupFilter;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 use WhiteDigital\EntityResourceMapper\Attribute\Mapping;
-use WhiteDigital\EntityResourceMapper\Filters\ResourceBooleanFilter;
 use WhiteDigital\EntityResourceMapper\Filters\ResourceOrderFilter;
 use WhiteDigital\EntityResourceMapper\Filters\ResourceSearchFilter;
 use WhiteDigital\EntityResourceMapper\Resource\BaseResource;
@@ -57,7 +56,6 @@ use WhiteDigital\Translation\Entity\Translation;
         processor: TranslationDataProcessor::class,
     ),
     ApiFilter(GroupFilter::class, arguments: ['parameterName' => 'groups', 'overrideDefaultGroups' => false, ]),
-    ApiFilter(ResourceBooleanFilter::class, properties: ['isActive', ]),
     ApiFilter(ResourceOrderFilter::class, properties: ['domain', 'locale', 'key', 'translation', ]),
     ApiFilter(ResourceSearchFilter::class, properties: ['domain', 'locale', 'key', 'translation', ]),
 ]
@@ -98,9 +96,6 @@ class TranslationResource extends BaseResource
     #[Groups([self::READ, self::WRITE, ])]
     #[Assert\NotBlank]
     public ?string $translation = null;
-
-    #[Groups([self::READ, self::WRITE, ])]
-    public bool $isActive = true;
 
     #[Groups([self::LIST, ])]
     public array $translations = [];

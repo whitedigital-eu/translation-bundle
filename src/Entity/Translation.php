@@ -12,7 +12,7 @@ use WhiteDigital\Translation\Repository\TranslationRepository;
 
 #[ORM\Entity(repositoryClass: TranslationRepository::class)]
 #[Mapping(TranslationResource::class)]
-#[ORM\UniqueConstraint(fields: ['domain', 'locale', 'key', 'translation', 'isActive', ])]
+#[ORM\UniqueConstraint(fields: ['domain', 'locale', 'key', 'translation', ])]
 class Translation extends BaseEntity
 {
     use Id;
@@ -28,9 +28,6 @@ class Translation extends BaseEntity
 
     #[ORM\Column(type: Types::TEXT)]
     protected ?string $translation = null;
-
-    #[ORM\Column(options: ['default' => true])]
-    protected bool $isActive = true;
 
     public function getDomain(): ?string
     {
@@ -76,18 +73,6 @@ class Translation extends BaseEntity
     public function setTranslation(?string $translation): self
     {
         $this->translation = $translation;
-
-        return $this;
-    }
-
-    public function getisActive(): bool
-    {
-        return $this->isActive;
-    }
-
-    public function setIsActive(bool $isActive): self
-    {
-        $this->isActive = $isActive;
 
         return $this;
     }
