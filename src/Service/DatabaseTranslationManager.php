@@ -15,7 +15,7 @@ final readonly class DatabaseTranslationManager implements LoaderInterface
 
     public function load(mixed $resource, string $locale, string $domain = 'messages'): MessageCatalogue
     {
-        $messages = $this->em->getRepository(Translation::class)->findBy(['locale' => $locale, 'isActive' => true]);
+        $messages = $this->em->getRepository(Translation::class)->findBy(['locale' => $locale]);
         $values = [];
 
         foreach ($messages as $message) {

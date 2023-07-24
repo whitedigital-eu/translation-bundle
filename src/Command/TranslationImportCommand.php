@@ -52,7 +52,7 @@ class TranslationImportCommand extends Command
         $translations = EntityResourceMapperBundle::makeOneDimension($json, onlyLast: true);
         foreach ($translations as $key => $value) {
             [$domain, $k] = explode('.', $key, 2);
-            $object = $this->em->getRepository(Translation::class)->findOneBy(['locale' => $locale, 'domain' => $domain, 'key' => $k, 'isActive' => true]);
+            $object = $this->em->getRepository(Translation::class)->findOneBy(['locale' => $locale, 'domain' => $domain, 'key' => $k]);
 
             if (null !== $object) {
                 continue;
@@ -61,7 +61,6 @@ class TranslationImportCommand extends Command
             $object = (new Translation())
                 ->setDomain($domain)
                 ->setKey($k)
-                ->setIsActive(true)
                 ->setLocale($locale)
                 ->setTranslation($value);
 

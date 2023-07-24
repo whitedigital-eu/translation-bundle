@@ -45,7 +45,7 @@ class TranslationDataProvider extends AbstractDataProvider
 
     protected function getList(Operation $operation, string $locale): TranslationResource
     {
-        $translations = $this->entityManager->getRepository($this->getEntityClass($operation))->findBy(['isActive' => true, 'locale' => $locale]);
+        $translations = $this->entityManager->getRepository($this->getEntityClass($operation))->findBy(['locale' => $locale]);
         $result = [];
         foreach ($translations as $translation) {
             $result[$translation->getDomain()][$translation->getKey()] = $translation->getTranslation();
