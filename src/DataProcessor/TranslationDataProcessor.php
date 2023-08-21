@@ -12,7 +12,7 @@ use Symfony\Contracts\Service\Attribute\Required;
 use WhiteDigital\EntityResourceMapper\DataProcessor\AbstractDataProcessor;
 use WhiteDigital\EntityResourceMapper\Entity\BaseEntity;
 use WhiteDigital\EntityResourceMapper\Resource\BaseResource;
-use WhiteDigital\Translation\ApiResource\TranslationResource;
+use WhiteDigital\Translation\Api\Resource\TranslationResource;
 use WhiteDigital\Translation\Entity\Translation;
 use WhiteDigital\Translation\Event\TranslationUpdatedEvent;
 
