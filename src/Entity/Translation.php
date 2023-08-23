@@ -7,7 +7,7 @@ use Doctrine\ORM\Mapping as ORM;
 use WhiteDigital\EntityResourceMapper\Attribute\Mapping;
 use WhiteDigital\EntityResourceMapper\Entity\BaseEntity;
 use WhiteDigital\EntityResourceMapper\Entity\Traits\Id;
-use WhiteDigital\Translation\ApiResource\TranslationResource;
+use WhiteDigital\Translation\Api\Resource\TranslationResource;
 use WhiteDigital\Translation\Repository\TranslationRepository;
 
 #[ORM\Entity(repositoryClass: TranslationRepository::class)]

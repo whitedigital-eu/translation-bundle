@@ -26,9 +26,7 @@ class TranslationBundle extends AbstractBundle
         'mapping' => true,
     ];
 
-    private const PATHS = [
-        '%kernel.project_dir%/vendor/whitedigital-eu/translation-bundle/src/ApiResource',
-    ];
+    private const API_RESOURCE_PATH = '%kernel.project_dir%/vendor/whitedigital-eu/translation-bundle/src/Api/Resource';
 
     public static function getConfig(string $package, ContainerBuilder $builder): array
     {
@@ -37,17 +35,19 @@ class TranslationBundle extends AbstractBundle
 
     public function prependExtension(ContainerConfigurator $container, ContainerBuilder $builder): void
     {
-        $audit = self::getConfig('audit', $builder);
+        $extensionConfig = self::getConfig('translation', $builder);
+        $auditExtensionConfig = self::getConfig('audit', $builder);
 
-        $manager = self::getConfig('translation', $builder)['entity_manager'] ?? 'default';
+        $manager = $extensionConfig['entity_manager'] ?? 'default';
 
         $this->addDoctrineConfig($container, $manager, 'Translation', self::MAPPINGS);
-        $this->addApiPlatformPaths($container, self::PATHS);
 
-        if ([] !== $audit) {
-            $mappings = $this->getOrmMappings($builder, $audit['default_entity_manager'] ?? 'default');
-            $this->addDoctrineConfig($container, $audit['audit_entity_manager'] ?? 'audit', 'Translation', self::MAPPINGS, $mappings);
+        if ([] !== $auditExtensionConfig) {
+            $mappings = $this->getOrmMappings($builder, $auditExtensionConfig['default_entity_manager'] ?? 'default');
+            $this->addDoctrineConfig($container, $auditExtensionConfig['audit_entity_manager'] ?? 'audit', 'Translation', self::MAPPINGS, $mappings);
         }
+
+        $this->configureApiPlatformExtension($container, $extensionConfig);
     }
 
     public function loadExtension(array $config, ContainerConfigurator $container, ContainerBuilder $builder): void
@@ -74,6 +74,16 @@ class TranslationBundle extends AbstractBundle
                 ->arrayNode('locales')
                     ->scalarPrototype()->end()
                 ->end()
+                ->scalarNode('custom_api_resource_path')->defaultNull()->end()
             ->end();
+    }
+
+    private function configureApiPlatformExtension(ContainerConfigurator $container, array $extensionConfig): void
+    {
+        if (!array_key_exists('custom_api_resource_path', $extensionConfig)) {
+            $this->addApiPlatformPaths($container, [self::API_RESOURCE_PATH]);
+        } elseif (!empty($extensionConfig['custom_api_resource_path'])) {
+            $this->addApiPlatformPaths($container, [$extensionConfig['custom_api_resource_path']]);
+        }
     }
 }

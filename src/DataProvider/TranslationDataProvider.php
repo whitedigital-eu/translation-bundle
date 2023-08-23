@@ -8,7 +8,7 @@ use ReflectionException;
 use Symfony\Component\Serializer\Exception\ExceptionInterface;
 use WhiteDigital\EntityResourceMapper\DataProvider\AbstractDataProvider;
 use WhiteDigital\EntityResourceMapper\Entity\BaseEntity;
-use WhiteDigital\Translation\ApiResource\TranslationResource;
+use WhiteDigital\Translation\Api\Resource\TranslationResource;
 
 use function array_key_exists;
 use function array_shift;
