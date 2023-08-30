@@ -23,7 +23,7 @@ class TranslationDataProvider extends AbstractDataProvider
     public function provide(Operation $operation, array $uriVariables = [], array $context = []): object|array|null
     {
         if (in_array(TranslationResource::LIST, $operation->getNormalizationContext()['groups'] ?? [], true)) {
-            return $this->getList($operation, $uriVariables['locale']);
+            return $this->getList($operation, $uriVariables['locale'], $context);
         }
 
         if (array_key_exists('id', $uriVariables)) {
@@ -43,9 +43,9 @@ class TranslationDataProvider extends AbstractDataProvider
         return TranslationResource::create($entity, $context);
     }
 
-    protected function getList(Operation $operation, string $locale): TranslationResource
+    protected function getList(Operation $operation, string $locale, array $context): TranslationResource
     {
-        $translations = $this->entityManager->getRepository($this->getEntityClass($operation))->findBy(['locale' => $locale]);
+        $translations = $this->entityManager->getRepository($this->getEntityClass($operation, $context))->findBy(['locale' => $locale]);
         $result = [];
         foreach ($translations as $translation) {
             $result[$translation->getDomain()][$translation->getKey()] = $translation->getTranslation();
