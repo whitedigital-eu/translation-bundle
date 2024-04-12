@@ -10,14 +10,16 @@ use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpFoundation\HeaderUtils;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
+use WhiteDigital\Translation\Api\Resource\TranslationImportRequestResource;
 use WhiteDigital\Translation\Entity\Translation;
 use WhiteDigital\Translation\Repository\TranslationRepository;
 
-readonly class TranslationExportRequestDataProcessor implements ProcessorInterface
+readonly class TranslationImportRequestDataProcessor implements ProcessorInterface
 {
     private TranslationRepository $translationRepository;
     private PropertyAccessor $propertyAccessor;
@@ -42,6 +44,9 @@ readonly class TranslationExportRequestDataProcessor implements ProcessorInterfa
     {
         if (!$operation instanceof Post) {
             throw new MethodNotAllowedHttpException(['POST'], 'Method not allowed');
+        }
+        if (!$data instanceof TranslationImportRequestResource) {
+            throw new BadRequestException();
         }
 
         //create writable spreadsheet
