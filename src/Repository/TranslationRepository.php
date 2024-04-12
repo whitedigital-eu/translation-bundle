@@ -3,6 +3,7 @@
 namespace WhiteDigital\Translation\Repository;
 
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Query;
 use Doctrine\Persistence\ManagerRegistry;
 use WhiteDigital\Translation\Entity\Translation;
 
@@ -45,5 +46,10 @@ class TranslationRepository extends ServiceEntityRepository
             ->getResult();
 
         return array_merge(array_column($result, 'locale'));
+    }
+
+    public function findAllQuery(): Query
+    {
+        return $this->createQueryBuilder('t')->getQuery();
     }
 }
