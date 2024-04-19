@@ -8,10 +8,12 @@ use ApiPlatform\State\ProcessorInterface;
 use Doctrine\ORM\EntityManagerInterface;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Worksheet\Row;
 use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Exception\BadRequestException;
 use Symfony\Component\HttpFoundation\HeaderUtils;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
 use Symfony\Component\PropertyAccess\PropertyAccess;
 use Symfony\Component\PropertyAccess\PropertyAccessor;
@@ -45,52 +47,39 @@ readonly class TranslationImportRequestDataProcessor implements ProcessorInterfa
         if (!$operation instanceof Post) {
             throw new MethodNotAllowedHttpException(['POST'], 'Method not allowed');
         }
+
         if (!$data instanceof TranslationImportRequestResource) {
             throw new BadRequestException();
         }
 
-        //create writable spreadsheet
-        $spreadsheet = new Spreadsheet();
+        //Configure spreadsheet reader
+        $spreadSheetReader = IOFactory::createReader(IOFactory::READER_XLSX)
+            ->setLoadSheetsOnly('Translations')
+            ->setReadDataOnly(true);
+
+        //Load spreadsheet into memory?
+        $spreadsheet = $spreadSheetReader->load($data->file?->getPathname());
         //create header row
         $worksheet = $spreadsheet->getActiveSheet();
-        $this->createHeaderRow($worksheet);
-        $this->styleHeaderRow($worksheet);
-        //query data in batches
-        /** @var Translation $translation */
-        $y = 2;
-        foreach ($this->translationRepository->findAllQuery()->toIterable() as $translation) {
-            $x = 1;
-            foreach ($this->getExportAttributes() as $exportAttribute) {
-                $worksheet->setCellValue([$x, $y], $this->propertyAccessor->getValue($translation, $exportAttribute));
-                $x++;
+        foreach ($worksheet->getRowIterator() as $row) {
+            if ($this->isHeaderRow($row)) {
+                continue;
             }
-            $y++;
-        }
-        //return written spreadsheet
-        $spreadSheetWriter = IOFactory::createWriter($spreadsheet, IOFactory::WRITER_XLSX);
-        $tempFile = tempnam(sys_get_temp_dir(), 'translations_export_');
-        $spreadSheetWriter->save($tempFile);
+            foreach ($row->getCellIterator() as $cell) {
 
-        $response = new BinaryFileResponse($tempFile);
-        $disposition = HeaderUtils::makeDisposition(HeaderUtils::DISPOSITION_ATTACHMENT, 'filename.xlsx');
-        $response->headers->set('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        $response->headers->set('Content-Disposition', $disposition);
-        $response->deleteFileAfterSend();
-
-        return $response;
-    }
-
-    private function createHeaderRow(Worksheet $worksheet): void
-    {
-        foreach ($this->getExportAttributes() as $idx => $exportAttribute) {
-            $worksheet->setCellValue([1 + $idx, 1], ucfirst($exportAttribute));
+            }
         }
     }
 
-    private function styleHeaderRow(Worksheet $worksheet): void
+    private function isHeaderRow(Row $row): bool
     {
-        foreach ($this->getExportAttributes() as $idx => $exportAttribute) {
-            $worksheet->getStyle([1 + $idx, 1])->getFont()->setBold(true);
+        return $row->getRowIndex() === 1;
+    }
+
+    private function mapHeaderCells(Row $row)
+    {
+        foreach ($row->getCellIterator() as $headerCell) {
+
         }
     }
 }

@@ -31,10 +31,7 @@ use WhiteDigital\Translation\Enum\TranslationImportMode;
                                         'properties' => [
                                             'importMode' => [
                                                 'type' => 'string',
-                                                'enum' => [
-                                                    TranslationImportMode::VALUES,
-                                                    TranslationImportMode::SKIP_EXISTING->value,
-                                                ],
+                                                'enum' => TranslationImportMode::VALUES,
                                             ],
                                             'file' => [
                                                 'type'   => 'string',

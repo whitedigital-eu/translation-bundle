@@ -48,6 +48,7 @@ readonly class TranslationExportRequestDataProcessor implements ProcessorInterfa
         $spreadsheet = new Spreadsheet();
         //create header row
         $worksheet = $spreadsheet->getActiveSheet();
+        $worksheet->setTitle('Translations', false, false);
         $this->createHeaderRow($worksheet);
         $this->styleHeaderRow($worksheet);
         //query data in batches
