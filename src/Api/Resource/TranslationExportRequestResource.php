@@ -28,7 +28,8 @@ use WhiteDigital\Translation\DataProcessor\TranslationExportRequestDataProcessor
                             ]),
                         ),
                     ],
-                )),
+                )
+            ),
         ],
         processor: TranslationExportRequestDataProcessor::class,
     ),
