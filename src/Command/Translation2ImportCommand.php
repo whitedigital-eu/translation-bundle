@@ -8,9 +8,11 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 use WhiteDigital\EntityResourceMapper\EntityResourceMapperBundle;
 use WhiteDigital\Translation\Entity\Translation;
+use WhiteDigital\Translation\Event\TranslationUpdatedEvent;
 
 use function explode;
 use function file_exists;
@@ -20,13 +22,14 @@ use function json_decode;
 use function sprintf;
 
 #[AsCommand(
-    name: 'wd:translation:import',
+    name: 'awd:translation:import',
     description: 'Import i18n translations into db structure',
 )]
-class TranslationImportCommand extends Command
+class Translation2ImportCommand extends Command
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
+        private readonly EventDispatcherInterface $dispatcher,
         ?string $name = null,
     ) {
         parent::__construct($name);
@@ -68,6 +71,8 @@ class TranslationImportCommand extends Command
         }
 
         $this->em->flush();
+
+        $this->dispatcher->dispatch(new TranslationUpdatedEvent(), TranslationUpdatedEvent::EVENT);
 
         return Command::SUCCESS;
     }

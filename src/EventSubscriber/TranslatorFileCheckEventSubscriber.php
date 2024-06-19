@@ -13,6 +13,7 @@ use function file_exists;
 use function file_put_contents;
 use function function_exists;
 use function ini_get;
+use function is_dir;
 use function opcache_invalidate;
 use function sprintf;
 use function touch;
@@ -54,18 +55,20 @@ final readonly class TranslatorFileCheckEventSubscriber implements EventSubscrib
      */
     public function removeCacheFile(string $locale): bool
     {
-        $finder = new Finder();
-        $finder->files()->in($this->bag->get('kernel.cache_dir') . '/translations')->name(sprintf('/catalogue\.%s.*\.php$/', $locale));
         $deleted = true;
-        foreach ($finder as $file) {
-            $path = $file->getRealPath();
-            $this->invalidateSystemCacheForFile($path);
-            $deleted = unlink($path);
+        if (is_dir($this->bag->get('kernel.cache_dir') . '/translations')) {
+            $finder = new Finder();
+            $finder->files()->in($this->bag->get('kernel.cache_dir') . '/translations')->name(sprintf('/catalogue\.%s.*\.php$/', $locale));
+            foreach ($finder as $file) {
+                $path = $file->getRealPath();
+                $this->invalidateSystemCacheForFile($path);
+                $deleted = unlink($path);
 
-            $metadata = $path . '.meta';
-            if (file_exists($metadata)) {
-                $this->invalidateSystemCacheForFile($metadata);
-                unlink($metadata);
+                $metadata = $path . '.meta';
+                if (file_exists($metadata)) {
+                    $this->invalidateSystemCacheForFile($metadata);
+                    unlink($metadata);
+                }
             }
         }
 

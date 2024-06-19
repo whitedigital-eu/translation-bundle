@@ -21,6 +21,7 @@ return static function (TranslationConfig $config): void {
 ```
 After overriding default api resource, do not forget to update ClassMapperConfigurator configuration that is used for
 resource <-> entity mapping in `whitedigital-eu/entity-resource-mapper-bundle`
+
 ```php
 use App\ApiResource\Admin\TranslationResource;
 use WhiteDigital\Translation\Entity\Translation;

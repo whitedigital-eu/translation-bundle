@@ -4,15 +4,16 @@ namespace WhiteDigital\Translation\Entity;
 
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use WhiteDigital\EntityResourceMapper\Attribute\Mapping;
 use WhiteDigital\EntityResourceMapper\Entity\BaseEntity;
 use WhiteDigital\EntityResourceMapper\Entity\Traits\Id;
-use WhiteDigital\Translation\Api\Resource\TranslationResource;
 use WhiteDigital\Translation\Repository\TranslationRepository;
 
 #[ORM\Entity(repositoryClass: TranslationRepository::class)]
-#[Mapping(TranslationResource::class)]
 #[ORM\UniqueConstraint(fields: ['domain', 'locale', 'key', 'translation', ])]
+#[ORM\Table(name: 'translation')]
+/**
+ * @deprecated
+ */
 class Translation extends BaseEntity
 {
     use Id;
