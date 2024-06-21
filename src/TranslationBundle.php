@@ -47,6 +47,23 @@ class TranslationBundle extends AbstractBundle
             $this->addDoctrineConfig($container, $auditExtensionConfig['audit_entity_manager'] ?? 'audit', 'Translation', self::MAPPINGS, $mappings);
         }
 
+        if ($builder->hasExtension('doctrine_migrations')) {
+            $container->extension('doctrine_migrations', [
+                'migrations_paths' => [
+                    'WhiteDigital\\Translation\\Migrations' => '%kernel.project_dir%/vendor/whitedigital-eu/translation-bundle/migrations',
+                ],
+            ]);
+        }
+
+        if ($builder->hasExtension('lexik_translation')) {
+            $container->extension('lexik_translation', [
+                'fallback_locale' => 'lv',
+                'managed_locales' => [
+                    'lv',
+                ],
+            ]);
+        }
+
         $this->configureApiPlatformExtension($container, $extensionConfig);
     }
 

@@ -74,7 +74,7 @@ class TransUnitImportCommand extends Command
 
         $extract = $this->getApplication()?->find('translation:extract');
         $arrayInput = new ArrayInput([
-            '--force' => '',
+            '--force' => true,
             '--format' => 'json',
             'locale' => $locale,
         ]);
@@ -85,8 +85,8 @@ class TransUnitImportCommand extends Command
 
         $command = $this->getApplication()?->find('lexik:translations:import');
         $arguments = [
-            '--no-interaction' => '',
-            '--cache-clear' => '',
+            '--no-interaction' => true,
+            '--cache-clear' => true,
             '--locales' => [$locale],
         ];
 

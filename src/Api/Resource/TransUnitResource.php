@@ -73,6 +73,7 @@ class TransUnitResource
     #[Assert\NotBlank]
     public ?string $domain = null;
 
+    /** @var array<string, string> */
     #[Groups([self::READ, self::WRITE, self::LIST, ])]
     public array $translations = [];
 

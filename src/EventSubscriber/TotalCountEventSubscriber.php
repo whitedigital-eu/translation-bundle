@@ -48,7 +48,7 @@ final readonly class TotalCountEventSubscriber implements EventSubscriberInterfa
     {
         $request = $event->getRequest();
         $at = $request->attributes;
-        if ($at->has('_api_resource_class') && TransUnitResource::class === $at->get('_api_resource_class') && 'trans_unit_list_locale' !== $at->get('_api_operation')->getName() && $at instanceof GetCollection) {
+        if ($at->has('_api_resource_class') && TransUnitResource::class === $at->get('_api_resource_class') && '/trans_units' === $at->get('_api_operation')->getUriTemplate() && $at->get('_api_operation') instanceof GetCollection) {
             $serialized = $event->getControllerResult();
             $data = json_decode($serialized, true, 512, JSON_THROW_ON_ERROR);
             $params = $request->query->all();
@@ -61,14 +61,14 @@ final readonly class TotalCountEventSubscriber implements EventSubscriberInterfa
 
             $count = $queryBuilder->getQuery()->getSingleScalarResult();
 
-            $previuosView = $nextView = $firstView = $lastView = $pager;
+            $previousView = $nextView = $firstView = $lastView = $pager;
 
             $page = ($pager['page'] ?? 1);
             if (1 < $page) {
                 $firstView['page'] = 1;
-                $previuosView['page'] = $page - 1;
+                $previousView['page'] = $page - 1;
                 $data['hydra:view']['hydra:first'] = $uri . '?' . http_build_query($firstView);
-                $data['hydra:view']['hydra:previous'] = $uri . '?' . http_build_query($previuosView);
+                $data['hydra:view']['hydra:previous'] = $uri . '?' . http_build_query($previousView);
             }
 
             $total = ceil($count / ($pager['itemsPerPage'] ?? 30));

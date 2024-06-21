@@ -27,7 +27,9 @@
         "symfony/service-contracts": "*",
         "symfony/translation": "*",
         "symfony/validator": "*",
-        "whitedigital-eu/entity-resource-mapper-bundle": "^0.23|^0.24"
+        "whitedigital-eu/entity-resource-mapper-bundle": "^0.23|^0.24",
+        "lexik/translation-bundle": "*",
+        "symfony/finder": "*"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "*",
