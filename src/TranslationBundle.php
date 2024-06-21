@@ -41,10 +41,12 @@ class TranslationBundle extends AbstractBundle
         $manager = $extensionConfig['entity_manager'] ?? 'default';
 
         $this->addDoctrineConfig($container, $manager, 'Translation', self::MAPPINGS);
+        $this->addDoctrineConfig($container, $manager, 'LexikTranslationBundle', []);
 
         if ([] !== $auditExtensionConfig) {
             $mappings = $this->getOrmMappings($builder, $auditExtensionConfig['default_entity_manager'] ?? 'default');
             $this->addDoctrineConfig($container, $auditExtensionConfig['audit_entity_manager'] ?? 'audit', 'Translation', self::MAPPINGS, $mappings);
+            $this->addDoctrineConfig($container, $auditExtensionConfig['audit_entity_manager'] ?? 'audit', 'LexikTranslationBundle', []);
         }
 
         if ($builder->hasExtension('doctrine_migrations')) {
