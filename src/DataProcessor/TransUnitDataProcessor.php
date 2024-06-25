@@ -12,6 +12,9 @@ use Lexik\Bundle\TranslationBundle\Manager\TransUnitManagerInterface;
 use ReflectionException;
 use WhiteDigital\Translation\DataProvider\TransUnitDataProvider;
 
+use function array_map;
+use function in_array;
+
 readonly class TransUnitDataProcessor implements ProcessorInterface
 {
     public function __construct(

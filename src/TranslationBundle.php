@@ -10,6 +10,7 @@ use WhiteDigital\EntityResourceMapper\DependencyInjection\Traits\DefineApiPlatfo
 use WhiteDigital\EntityResourceMapper\DependencyInjection\Traits\DefineOrmMappings;
 use WhiteDigital\EntityResourceMapper\EntityResourceMapperBundle;
 
+use function array_key_exists;
 use function array_merge_recursive;
 
 class TranslationBundle extends AbstractBundle

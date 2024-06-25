@@ -20,6 +20,8 @@ use function json_decode;
 use function json_encode;
 use function strtok;
 
+use const JSON_THROW_ON_ERROR;
+
 final readonly class TotalCountEventSubscriber implements EventSubscriberInterface
 {
     public function __construct(
