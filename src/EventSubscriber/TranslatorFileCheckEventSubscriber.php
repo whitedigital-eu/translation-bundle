@@ -21,6 +21,9 @@ use function unlink;
 
 use const PHP_SAPI;
 
+/**
+ * @deprecated
+ */
 final readonly class TranslatorFileCheckEventSubscriber implements EventSubscriberInterface
 {
     public function __construct(private EntityManagerInterface $em, private ParameterBagInterface $bag)

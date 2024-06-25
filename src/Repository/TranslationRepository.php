@@ -9,6 +9,9 @@ use WhiteDigital\Translation\Entity\Translation;
 use function array_column;
 use function array_merge;
 
+/**
+ * @deprecated
+ */
 class TranslationRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -16,7 +19,7 @@ class TranslationRepository extends ServiceEntityRepository
         parent::__construct($registry, Translation::class);
     }
 
-    public function findByLocale(string $locale)
+    public function findByLocale(string $locale): array
     {
         return $this->createQueryBuilder('t', 't.key')
             ->andWhere('t.locale = :locale')
