@@ -22,6 +22,7 @@
         "symfony/dependency-injection": "*",
         "symfony/event-dispatcher": "*",
         "symfony/filesystem": "*",
+        "symfony/form": "*",
         "symfony/http-kernel": "*",
         "symfony/serializer": "*",
         "symfony/service-contracts": "*",
