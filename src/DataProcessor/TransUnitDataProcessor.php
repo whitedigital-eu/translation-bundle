@@ -75,17 +75,20 @@ readonly class TransUnitDataProcessor implements ProcessorInterface
             }
             $locales = array_values(array_filter($locales, static fn (string $m) => $m !== $locale));
         }
-        foreach ($locales as $locale) {
-            $translation = $unit->getTranslation($locale);
-            if (null !== $translation) {
-                $unit->removeTranslation($translation);
-                $this->entityManager->remove($translation);
-            }
-        }
 
         foreach ($unit->getTranslations() as $translation) {
             /* @noinspection PhpPossiblePolymorphicInvocationInspection */
             $translation->setModifiedManually(true);
+            $this->entityManager->persist($translation);
+        }
+
+        foreach ($locales as $locale) {
+            $translation = $unit->getTranslation($locale);
+            if (null !== $translation) {
+                $this->transUnit->updateTranslation($unit, $locale, '__' . $unit->getKey());
+                $translation->setModifiedManually(false);
+                $this->entityManager->persist($translation);
+            }
         }
 
         $this->entityManager->persist($unit);
@@ -114,6 +117,7 @@ readonly class TransUnitDataProcessor implements ProcessorInterface
         foreach ($unit->getTranslations() as $translation) {
             /* @noinspection PhpPossiblePolymorphicInvocationInspection */
             $translation->setModifiedManually(true);
+            $this->entityManager->persist($translation);
         }
 
         $this->entityManager->persist($unit);

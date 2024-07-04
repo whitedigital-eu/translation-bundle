@@ -41,11 +41,13 @@ class TranslationBundle extends AbstractBundle
 
         $manager = $extensionConfig['entity_manager'] ?? 'default';
 
+        /* @deprecated */
         $this->addDoctrineConfig($container, $manager, 'Translation', self::MAPPINGS);
         $this->addDoctrineConfig($container, $manager, 'LexikTranslationBundle', []);
 
         if ([] !== $auditExtensionConfig) {
             $mappings = $this->getOrmMappings($builder, $auditExtensionConfig['default_entity_manager'] ?? 'default');
+            /* @deprecated */
             $this->addDoctrineConfig($container, $auditExtensionConfig['audit_entity_manager'] ?? 'audit', 'Translation', self::MAPPINGS, $mappings);
             $this->addDoctrineConfig($container, $auditExtensionConfig['audit_entity_manager'] ?? 'audit', 'LexikTranslationBundle', []);
         }
@@ -60,9 +62,9 @@ class TranslationBundle extends AbstractBundle
 
         if ($builder->hasExtension('lexik_translation')) {
             $container->extension('lexik_translation', [
-                'fallback_locale' => 'lv',
+                'fallback_locale' => $extensionConfig['locale'] ?? 'lv',
                 'managed_locales' => [
-                    'lv',
+                    $extensionConfig['locale'] ?? 'lv',
                 ],
             ]);
         }
@@ -89,6 +91,7 @@ class TranslationBundle extends AbstractBundle
             ->children()
                 ->scalarNode('entity_manager')->defaultValue('default')->end()
                 ->scalarNode('custom_api_resource_path')->defaultNull()->end()
+                ->scalarNode('locale')->defaultValue('lv')->info('default_locale')->end()
             ->end();
     }
 
