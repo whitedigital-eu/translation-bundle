@@ -189,7 +189,19 @@ readonly class TransUnitDataProvider implements ProviderInterface
             $result[$domain] = array_merge_recursive($nonMatchingKeys, $this->convert($matchingKeys));
         }
 
-        ksort($result);
+        function recursive_ksort(&$array, int $flags = SORT_NATURAL | SORT_FLAG_CASE): bool
+        {
+            foreach ($array as &$v) {
+                if (is_array($v)) {
+                    recursive_ksort($v, $flags);
+                }
+            }
+            unset($v);
+
+            return ksort($array, $flags);
+        }
+
+        recursive_ksort($result);
 
         $resource = new TransUnitResource();
         $resource->id = 0;
