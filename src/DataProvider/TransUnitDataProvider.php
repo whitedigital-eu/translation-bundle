@@ -79,9 +79,14 @@ readonly class TransUnitDataProvider implements ProviderInterface
         $resource->translations = [];
 
         try {
+            /* @noinspection PhpPossiblePolymorphicInvocationInspection */
             $resource->isDeleted = $entity->isDeleted;
         } catch (Throwable) {
-            $resource->isDeleted = (bool) $this->entityManager->getConnection()->executeStatement('SELECT is_deleted FROM lexik_trans_unit WHERE id = :id', ['id' => $id]);
+            $resource->isDeleted = null;
+        }
+
+        if (null === $resource->isDeleted) {
+            $resource->isDeleted = (bool) $this->entityManager->getConnection()->executeQuery('SELECT is_deleted FROM lexik_trans_unit WHERE id = :id', ['id' => $id])->fetchOne();
         }
 
         foreach ($entity->getTranslations() as $translation) {
@@ -160,6 +165,7 @@ readonly class TransUnitDataProvider implements ProviderInterface
         $transUnits = $this->entityManager->getRepository(TransUnit::class)->findAll();
         $result = [];
         foreach ($transUnits as $transUnit) {
+            /* @noinspection PhpPossiblePolymorphicInvocationInspection */
             if (!$transUnit->isDeleted) {
                 $found = false;
                 foreach ($transUnit->getTranslations() as $translation) {
@@ -175,6 +181,7 @@ readonly class TransUnitDataProvider implements ProviderInterface
         }
 
         $result = $result[$uriVariables['locale']];
+
         foreach ($result as $domain => $keys) {
             $matchingKeys = $nonMatchingKeys = [];
 
