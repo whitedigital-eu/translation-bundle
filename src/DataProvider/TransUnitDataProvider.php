@@ -21,21 +21,27 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use Throwable;
 use WhiteDigital\Translation\Api\Resource\TransUnitResource;
+use WhiteDigital\Translation\Service\CollectionCount;
 
 use function array_merge_recursive;
 use function array_shift;
 use function explode;
 use function in_array;
+use function is_array;
 use function ksort;
 use function preg_match;
 use function sprintf;
 use function strtolower;
+
+use const SORT_FLAG_CASE;
+use const SORT_NATURAL;
 
 readonly class TransUnitDataProvider implements ProviderInterface
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
         private TranslatorInterface $translator,
+        private CollectionCount $count,
         #[TaggedIterator('api_platform.doctrine.orm.query_extension.collection')]
         protected iterable $collectionExtensions = [],
     ) {
@@ -114,8 +120,9 @@ readonly class TransUnitDataProvider implements ProviderInterface
 
         $collection = $this->applyFilterExtensionsToCollection($queryBuilder, new QueryNameGenerator(), $operation, $context);
         $result = [];
+        $this->count->setCount((int) $collection->getTotalItems());
         foreach ($collection->getIterator()->getArrayCopy() as $item) {
-            $result[] = $this->getItem($item->getId());
+            $result[] = $this->getItem(entity: $item);
         }
 
         return $result;

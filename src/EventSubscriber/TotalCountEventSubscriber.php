@@ -4,15 +4,14 @@ namespace WhiteDigital\Translation\EventSubscriber;
 
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Symfony\EventListener\EventPriorities;
-use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\NonUniqueResultException;
 use Doctrine\ORM\NoResultException;
 use JsonException;
-use Lexik\Bundle\TranslationBundle\Entity\TransUnit;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpKernel\Event\ViewEvent;
 use Symfony\Component\HttpKernel\KernelEvents;
 use WhiteDigital\Translation\Api\Resource\TransUnitResource;
+use WhiteDigital\Translation\Service\CollectionCount;
 
 use function ceil;
 use function http_build_query;
@@ -25,7 +24,7 @@ use const JSON_THROW_ON_ERROR;
 final readonly class TotalCountEventSubscriber implements EventSubscriberInterface
 {
     public function __construct(
-        private EntityManagerInterface $entityManager,
+        private CollectionCount $count,
     ) {
     }
 
@@ -58,11 +57,6 @@ final readonly class TotalCountEventSubscriber implements EventSubscriberInterfa
 
             $uri = strtok($request->attributes->get('_api_normalization_context')['request_uri'], '?');
 
-            $queryBuilder = $this->entityManager->createQueryBuilder();
-            $queryBuilder->select('count(e)')->from(TransUnit::class, 'e');
-
-            $count = $queryBuilder->getQuery()->getSingleScalarResult();
-
             $previousView = $nextView = $firstView = $lastView = $pager;
 
             $page = ($pager['page'] ?? 1);
@@ -73,7 +67,7 @@ final readonly class TotalCountEventSubscriber implements EventSubscriberInterfa
                 $data['hydra:view']['hydra:previous'] = $uri . '?' . http_build_query($previousView);
             }
 
-            $total = ceil($count / ($pager['itemsPerPage'] ?? 30));
+            $total = ceil($this->count->getCount() / ($pager['itemsPerPage'] ?? 30));
             if ($total > $page) {
                 $lastView['page'] = $total;
                 $nextView['page'] = $page + 1;
@@ -81,7 +75,7 @@ final readonly class TotalCountEventSubscriber implements EventSubscriberInterfa
                 $data['hydra:view']['hydra:next'] = $uri . '?' . http_build_query($nextView);
             }
 
-            $data['hydra:totalItems'] = $count;
+            $data['hydra:totalItems'] = $this->count->getCount();
             $event->setControllerResult(json_encode($data, JSON_THROW_ON_ERROR));
         }
     }
