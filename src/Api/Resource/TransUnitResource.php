@@ -10,6 +10,7 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\OpenApi\Model;
 use ApiPlatform\Serializer\Filter\GroupFilter;
 use Doctrine\Common\Collections\Order;
 use Lexik\Bundle\TranslationBundle\Entity\TransUnit;
@@ -48,6 +49,10 @@ use WhiteDigital\Translation\DataProvider\TransUnitDataProvider;
                 uriVariables: [
                     'locale',
                 ],
+                openapi: new Model\Operation(
+                    summary: 'Retrive list of all active translations by locale',
+                    description: 'Retrive list of all active translations by locale',
+                ),
                 normalizationContext: ['groups' => [self::LIST, ], ],
                 write: false,
                 name: 'trans_unit_list_locale',
