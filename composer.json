@@ -28,7 +28,7 @@
         "symfony/service-contracts": "*",
         "symfony/translation": "*",
         "symfony/validator": "*",
-        "whitedigital-eu/entity-resource-mapper-bundle": "^0.23|^0.24",
+        "whitedigital-eu/entity-resource-mapper-bundle": "^0.24",
         "lexik/translation-bundle": "*",
         "symfony/finder": "*"
     },
@@ -51,5 +51,8 @@
         "branch-alias": {
             "dev-main": "0.2.x-dev"
         }
+    },
+    "conflict": {
+        "friendsofphp/php-cs-fixer": "<3.57.0"
     }
 }
