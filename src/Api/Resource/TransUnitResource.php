@@ -2,51 +2,73 @@
 
 namespace WhiteDigital\Translation\Api\Resource;
 
-use ApiPlatform\Doctrine\Common\Filter\OrderFilterInterface;
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiProperty;
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use ApiPlatform\Serializer\Filter\GroupFilter;
+use Doctrine\Common\Collections\Order;
+use Lexik\Bundle\TranslationBundle\Entity\TransUnit;
 use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use WhiteDigital\EntityResourceMapper\Attribute\Mapping;
+use WhiteDigital\EntityResourceMapper\Filters\ResourceBooleanFilter;
+use WhiteDigital\EntityResourceMapper\Filters\ResourceOrderFilter;
+use WhiteDigital\EntityResourceMapper\Filters\ResourceSearchFilter;
+use WhiteDigital\EntityResourceMapper\Resource\BaseResource;
 use WhiteDigital\EntityResourceMapper\UTCDateTimeImmutable;
 use WhiteDigital\Translation\DataProcessor\TransUnitDataProcessor;
 use WhiteDigital\Translation\DataProvider\TransUnitDataProvider;
 
-#[ApiResource(
-    shortName: 'TransUnit',
-    operations: [
-        new Get(
-            uriTemplate: '/trans_units/{id}',
-        ),
-        new GetCollection(
-            uriTemplate: '/trans_units',
-        ),
-        new Patch(
-            uriTemplate: '/trans_units/{id}',
-        ),
-        new Post(
-            uriTemplate: '/trans_units',
-        ),
-        new GetCollection(
-            uriTemplate: '/trans_units/list/{locale}',
-            uriVariables: [
-                'locale',
-            ],
-            normalizationContext: ['groups' => [self::LIST, ], ],
-            write: false,
-            name: 'trans_unit_list_locale',
-        ),
-    ],
-    normalizationContext: ['groups' => [self::READ, ], ],
-    denormalizationContext: ['groups' => [self::WRITE, ], ],
-    order: ['id' => OrderFilterInterface::DIRECTION_DESC, ],
-    provider: TransUnitDataProvider::class,
-    processor: TransUnitDataProcessor::class,
-)]
-class TransUnitResource
+#[
+    ApiResource(
+        shortName: 'TransUnit',
+        operations: [
+            new Delete(
+                uriTemplate: '/trans_units/{id}',
+            ),
+            new Get(
+                uriTemplate: '/trans_units/{id}',
+            ),
+            new GetCollection(
+                uriTemplate: '/trans_units',
+            ),
+            new Patch(
+                uriTemplate: '/trans_units/{id}',
+            ),
+            new Post(
+                uriTemplate: '/trans_units',
+            ),
+            new GetCollection(
+                uriTemplate: '/trans_units/list/{locale}',
+                uriVariables: [
+                    'locale',
+                ],
+                normalizationContext: ['groups' => [self::LIST, ], ],
+                write: false,
+                name: 'trans_unit_list_locale',
+            ),
+        ],
+        normalizationContext: ['groups' => [self::READ, ], ],
+        denormalizationContext: ['groups' => [self::WRITE, ], ],
+        order: [
+            'domain' => Order::Ascending->value,
+            'key' => Order::Ascending->value,
+        ],
+        provider: TransUnitDataProvider::class,
+        processor: TransUnitDataProcessor::class,
+    ),
+    ApiFilter(GroupFilter::class, arguments: ['parameterName' => 'groups', 'overrideDefaultGroups' => false, ]),
+    ApiFilter(ResourceOrderFilter::class, properties: ['id', 'domain', 'translations.locale', 'key', 'createdAt', 'updatedAt', 'isDeleted', 'translations.content']),
+    ApiFilter(ResourceBooleanFilter::class, properties: ['isDeleted', ]),
+    ApiFilter(ResourceSearchFilter::class, properties: ['translations.locale', 'key', 'translations.content', 'domain'])
+]
+#[Mapping(mappedClass: TransUnit::class)]
+class TransUnitResource extends BaseResource
 {
     public const PREFIX = 'trans_unit:';
 
@@ -75,8 +97,9 @@ class TransUnitResource
 
     /** @var array<string, string> */
     #[Groups([self::READ, self::WRITE, self::LIST, ])]
+    #[ApiProperty(example: ['en' => 'translation', 'lv' => 'tulkojums'])]
     public array $translations = [];
 
-    #[Groups([self::READ, self::WRITE, ])]
+    #[Groups([self::READ, ])]
     public ?bool $isDeleted = null;
 }
