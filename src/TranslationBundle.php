@@ -88,12 +88,6 @@ class TranslationBundle extends AbstractBundle
             ->addDefaultsIfNotSet()
             ->children()
                 ->scalarNode('entity_manager')->defaultValue('default')->end()
-                ->arrayNode('domains')
-                    ->scalarPrototype()->end()
-                ->end()
-                ->arrayNode('locales')
-                    ->scalarPrototype()->end()
-                ->end()
                 ->scalarNode('custom_api_resource_path')->defaultNull()->end()
             ->end();
     }
