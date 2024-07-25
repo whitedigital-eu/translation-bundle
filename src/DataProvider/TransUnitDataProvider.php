@@ -162,25 +162,29 @@ readonly class TransUnitDataProvider implements ProviderInterface
 
     private function list(array $uriVariables = []): object|array|null
     {
-        $transUnits = $this->entityManager->getRepository(TransUnit::class)->findAll();
+        $transUnits = $this->entityManager->getRepository(TransUnit::class)->createQueryBuilder('tu')
+            ->select('tu', 't')
+            ->innerJoin('tu.translations', 't', 'WITH', 't.locale = :locale')
+            ->where('tu.isDeleted = :isDeleted')
+            ->setParameter('locale', $uriVariables['locale'])
+            ->setParameter('isDeleted', false)
+            ->getQuery()
+            ->getArrayResult();
+
         $result = [];
         foreach ($transUnits as $transUnit) {
-            /* @noinspection PhpPossiblePolymorphicInvocationInspection */
-            if (!$transUnit->isDeleted) {
-                $found = false;
-                foreach ($transUnit->getTranslations() as $translation) {
-                    $result[$translation->getLocale()][$transUnit->getDomain()][$transUnit->getKey()] = $translation->getContent();
-                    if ($uriVariables['locale'] === $translation->getLocale()) {
-                        $found = true;
-                    }
-                }
-                if (!$found) {
-                    $result[$uriVariables['locale']][$transUnit->getDomain()][$transUnit->getKey()] = $transUnit->getKey();
+            /** @noinspection PhpPossiblePolymorphicInvocationInspection */
+            $found = false;
+            foreach ($transUnit['translations'] as $translation) {
+                $result[$transUnit['domain']][$transUnit['key']] = $translation['content'];
+                if ($uriVariables['locale'] === $translation['locale']) {
+                    $found = true;
                 }
             }
+            if (!$found) {
+                $result[$transUnit['domain']][$transUnit['key']] = $transUnit['key'];
+            }
         }
-
-        $result = $result[$uriVariables['locale']];
 
         foreach ($result as $domain => $keys) {
             $matchingKeys = $nonMatchingKeys = [];
