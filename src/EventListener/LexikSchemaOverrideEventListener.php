@@ -55,19 +55,23 @@ final readonly class LexikSchemaOverrideEventListener
         $platform = $connection->getDatabasePlatform();
 
         if ($platform instanceof PostgreSQLPlatform) {
-            $localeIdxSql = 'DO $$ BEGIN
-                        IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = \'idx_translations_locale\') THEN
-                            CREATE INDEX idx_translations_locale ON lexik_trans_unit_translations (locale);
-                        END IF;
-                    END $$;';
-            $connection->executeQuery($localeIdxSql);
+            if ($connection->createSchemaManager()->tablesExist(['lexik_trans_unit_translations'])) {
+                $localeIdxSql = 'DO $$ BEGIN
+                            IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = \'idx_translations_locale\') THEN
+                                CREATE INDEX idx_translations_locale ON lexik_trans_unit_translations (locale);
+                            END IF;
+                        END $$;';
+                $connection->executeQuery($localeIdxSql);
+            }
 
-            $isDeletedIdxSql = 'DO $$ BEGIN
+            if ($connection->createSchemaManager()->tablesExist(['lexik_trans_unit'])) {
+                $isDeletedIdxSql = 'DO $$ BEGIN
                         IF NOT EXISTS (SELECT 1 FROM pg_class WHERE relname = \'idx_trans_unit_is_deleted\') THEN
                             CREATE INDEX idx_trans_unit_is_deleted ON lexik_trans_unit (is_deleted);
                         END IF;
                     END $$;';
-            $connection->executeQuery($isDeletedIdxSql);
+                $connection->executeQuery($isDeletedIdxSql);
+            }
         }
     }
 }
