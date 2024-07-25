@@ -169,6 +169,7 @@ readonly class TransUnitDataProvider implements ProviderInterface
             ->setParameter('locale', $uriVariables['locale'])
             ->setParameter('isDeleted', false)
             ->getQuery()
+            ->useQueryCache(true)
             ->getArrayResult();
 
         $result = [];
