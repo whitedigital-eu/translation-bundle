@@ -25,6 +25,11 @@ final readonly class LexikSchemaOverrideEventListener
      */
     public function loadClassMetadata(LoadClassMetadataEventArgs $eventArgs): void
     {
+        $connection = $this->entityManager->getConnection();
+        if (!$connection->isConnected()) {
+            return;
+        }
+
         $classMetadata = $eventArgs->getClassMetadata();
 
         if (TransUnit::class !== $classMetadata->getName()) {
