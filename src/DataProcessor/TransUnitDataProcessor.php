@@ -8,31 +8,41 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\State\ProcessorInterface;
 use Doctrine\DBAL\Exception;
 use Doctrine\ORM\EntityManagerInterface;
+use Lexik\Bundle\TranslationBundle\Entity\Translation;
 use Lexik\Bundle\TranslationBundle\Manager\TransUnitManagerInterface;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
 use ReflectionException;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Contracts\Cache\CacheInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
 use WhiteDigital\EntityResourceMapper\Security\AuthorizationService;
 use WhiteDigital\EntityResourceMapper\Traits\Override;
+use WhiteDigital\SiteTree\Entity\SiteTree;
 use WhiteDigital\Translation\DataProvider\TransUnitDataProvider;
+use WhiteDigital\Translation\Entity\TransUnitIsDeleted;
 
 use function array_filter;
 use function array_map;
 use function array_values;
+use function class_exists;
 use function in_array;
 
-readonly class TransUnitDataProcessor implements ProcessorInterface
+class TransUnitDataProcessor implements ProcessorInterface
 {
     use Override;
 
+    private ?array $locales = null;
+
     public function __construct(
-        protected TransUnitManagerInterface $transUnit,
-        protected EntityManagerInterface $entityManager,
-        protected TransUnitDataProvider $transUnitDataProvider,
-        protected AuthorizationService $authorizationService,
-        protected TranslatorInterface $translator,
+        protected readonly TransUnitManagerInterface $transUnit,
+        protected readonly EntityManagerInterface $entityManager,
+        protected readonly TransUnitDataProvider $transUnitDataProvider,
+        protected readonly AuthorizationService $authorizationService,
+        protected readonly TranslatorInterface $translator,
+        protected readonly ParameterBagInterface $bag,
+        private readonly ?CacheInterface $whitedigitalTranslationCache = null,
     ) {
     }
 
@@ -84,7 +94,7 @@ readonly class TransUnitDataProcessor implements ProcessorInterface
 
         foreach ($locales as $locale) {
             $translation = $unit->getTranslation($locale);
-            if (null !== $translation) {
+            if (null !== $translation && in_array($locale, $this->getLocales(), true)) {
                 $this->transUnit->updateTranslation($unit, $locale, '__' . $unit->getKey());
                 $translation->setModifiedManually(false);
                 $this->entityManager->persist($translation);
@@ -94,7 +104,7 @@ readonly class TransUnitDataProcessor implements ProcessorInterface
         $this->entityManager->persist($unit);
         $this->entityManager->flush();
 
-        $this->entityManager->refresh($unit);
+        $this->deleteCache();
 
         return $this->transUnitDataProvider->getItem(entity: $unit);
     }
@@ -123,7 +133,7 @@ readonly class TransUnitDataProcessor implements ProcessorInterface
         $this->entityManager->persist($unit);
         $this->entityManager->flush();
 
-        $this->entityManager->refresh($unit);
+        $this->deleteCache();
 
         return $this->transUnitDataProvider->getItem(entity: $unit);
     }
@@ -139,7 +149,7 @@ readonly class TransUnitDataProcessor implements ProcessorInterface
         $this->authorizationService->authorizeSingleObject($data, AuthorizationService::ITEM_DELETE, context: $context);
         $unit = $this->transUnitDataProvider->findByIdOrThrowException($uriVariables['id']);
 
-        if (true !== $unit->isDeleted) {
+        if (0 === $this->entityManager->getRepository(TransUnitIsDeleted::class)->count(['transUnit' => $unit, 'isDeleted' => true])) {
             throw new BadRequestHttpException($this->translator->trans('error.transUnitDeleteOnlyIfDeleted', domain: 'whitedigital'));
         }
 
@@ -147,9 +157,39 @@ readonly class TransUnitDataProcessor implements ProcessorInterface
             $unit->removeTranslation($translation);
             $this->entityManager->remove($translation);
         }
+
+        $delete = $this->entityManager->getRepository(TransUnitIsDeleted::class)->findOneBy(['transUnit' => $unit, 'isDeleted' => true]);
+        $this->entityManager->remove($delete);
         $this->entityManager->remove($unit);
         $this->entityManager->flush();
 
+        $this->deleteCache();
+
         return null;
+    }
+
+    private function getLocales(): array
+    {
+        if (null === $this->locales) {
+            if (class_exists(SiteTree::class)) {
+                $trees = $this->entityManager->getRepository(SiteTree::class)->findBy(['parent' => null, 'isActive' => true]);
+                $this->locales = array_map(static fn (SiteTree $tree) => $tree->getSlug(), $trees);
+            } else {
+                $this->locales = [];
+            }
+        }
+
+        return $this->locales;
+    }
+
+    private function deleteCache(): void
+    {
+        if (null === $this->whitedigitalTranslationCache || null === $this->bag->get('whitedigital.translation.cache_pool')) {
+            return;
+        }
+
+        foreach ($this->entityManager->getRepository(Translation::class)->createQueryBuilder('t')->select('t.locale')->distinct()->getQuery()->getSingleColumnResult() as $locale) {
+            $this->whitedigitalTranslationCache->delete('whitedigital.translation.list.' . $locale);
+        }
     }
 }

@@ -9,6 +9,7 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 use WhiteDigital\EntityResourceMapper\DependencyInjection\Traits\DefineApiPlatformMappings;
 use WhiteDigital\EntityResourceMapper\DependencyInjection\Traits\DefineOrmMappings;
 use WhiteDigital\EntityResourceMapper\EntityResourceMapperBundle;
+use WhiteDigital\Translation\DependencyInjection\CompilerPass\TranslationCacheCompilerPass;
 
 use function array_key_exists;
 use function array_merge_recursive;
@@ -92,7 +93,13 @@ class TranslationBundle extends AbstractBundle
                 ->scalarNode('entity_manager')->defaultValue('default')->end()
                 ->scalarNode('custom_api_resource_path')->defaultNull()->end()
                 ->scalarNode('locale')->defaultValue('lv')->info('default_locale')->end()
+                ->scalarNode('cache_pool')->defaultNull()->end()
             ->end();
+    }
+
+    public function build(ContainerBuilder $container): void
+    {
+        $container->addCompilerPass(new TranslationCacheCompilerPass());
     }
 
     private function configureApiPlatformExtension(ContainerConfigurator $container, array $extensionConfig): void

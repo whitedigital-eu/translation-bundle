@@ -68,7 +68,7 @@ use WhiteDigital\Translation\DataProvider\TransUnitDataProvider;
         processor: TransUnitDataProcessor::class,
     ),
     ApiFilter(GroupFilter::class, arguments: ['parameterName' => 'groups', 'overrideDefaultGroups' => false, ]),
-    ApiFilter(ResourceOrderFilter::class, properties: ['id', 'domain', 'translations.locale', 'key', 'createdAt', 'updatedAt', 'isDeleted', 'translations.content']),
+    ApiFilter(ResourceOrderFilter::class, properties: ['id', 'domain', 'translations.locale', 'key', 'createdAt', 'updatedAt', 'translations.content']),
     ApiFilter(ResourceBooleanFilter::class, properties: ['isDeleted', ]),
     ApiFilter(ResourceSearchFilter::class, properties: ['translations.locale', 'key', 'translations.content', 'domain'])
 ]

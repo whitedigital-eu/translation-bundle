@@ -17,15 +17,23 @@ use Lexik\Bundle\TranslationBundle\Entity\TransUnit;
 use ReflectionClass;
 use ReflectionException;
 use Symfony\Component\DependencyInjection\Attribute\TaggedIterator;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Contracts\Cache\CacheInterface;
+use Symfony\Contracts\Cache\ItemInterface;
 use Symfony\Contracts\Translation\TranslatorInterface;
-use Throwable;
+use WhiteDigital\SiteTree\Entity\SiteTree;
 use WhiteDigital\Translation\Api\Resource\TransUnitResource;
+use WhiteDigital\Translation\Entity\TransUnitIsDeleted;
 use WhiteDigital\Translation\Service\CollectionCount;
 
+use function array_key_exists;
+use function array_map;
 use function array_merge_recursive;
 use function array_shift;
+use function class_exists;
 use function explode;
+use function filter_var;
 use function in_array;
 use function is_array;
 use function ksort;
@@ -33,15 +41,20 @@ use function preg_match;
 use function sprintf;
 use function strtolower;
 
+use const FILTER_VALIDATE_BOOLEAN;
 use const SORT_FLAG_CASE;
 use const SORT_NATURAL;
 
-readonly class TransUnitDataProvider implements ProviderInterface
+class TransUnitDataProvider implements ProviderInterface
 {
+    private ?array $locales = null;
+
     public function __construct(
-        private EntityManagerInterface $entityManager,
-        private TranslatorInterface $translator,
-        private CollectionCount $count,
+        private readonly EntityManagerInterface $entityManager,
+        private readonly TranslatorInterface $translator,
+        private readonly CollectionCount $count,
+        private readonly ParameterBagInterface $bag,
+        private readonly ?CacheInterface $whitedigitalTranslationCache = null,
         #[TaggedIterator('api_platform.doctrine.orm.query_extension.collection')]
         protected iterable $collectionExtensions = [],
     ) {
@@ -77,20 +90,18 @@ readonly class TransUnitDataProvider implements ProviderInterface
         $resource->key = $entity->getKey();
         $resource->domain = $entity->getDomain();
         $resource->translations = [];
+        $resource->isDeleted = 0 !== $this->entityManager->getRepository(TransUnitIsDeleted::class)->count(['transUnit' => $entity, 'isDeleted' => true]);
 
-        try {
-            /* @noinspection PhpPossiblePolymorphicInvocationInspection */
-            $resource->isDeleted = $entity->isDeleted;
-        } catch (Throwable) {
-            $resource->isDeleted = null;
-        }
-
-        if (null === $resource->isDeleted) {
-            $resource->isDeleted = (bool) $this->entityManager->getConnection()->executeQuery('SELECT is_deleted FROM lexik_trans_unit WHERE id = :id', ['id' => $id])->fetchOne();
-        }
-
+        $found = [];
         foreach ($entity->getTranslations() as $translation) {
             $resource->translations[$translation->getLocale()] = $translation->getContent();
+            $found[$translation->getLocale()] = 1;
+        }
+
+        foreach ($this->getLocales() as $locale) {
+            if (!array_key_exists($locale, $found)) {
+                $resource->translations[$locale] = '__' . $entity->getKey();
+            }
         }
 
         return $resource;
@@ -122,6 +133,25 @@ readonly class TransUnitDataProvider implements ProviderInterface
     {
         $queryBuilder = $this->entityManager->createQueryBuilder();
         $queryBuilder->select('e')->from(TransUnit::class, 'e');
+
+        if (isset($context['filters']) && array_key_exists('isDeleted', $context['filters'])) {
+            $check = filter_var($context['filters']['isDeleted'], FILTER_VALIDATE_BOOLEAN);
+            $checkQueryBuilder = $this->entityManager->getRepository(TransUnitIsDeleted::class)->createQueryBuilder('td');
+            $checkFound = $checkQueryBuilder
+                ->select('tu.id')
+                ->innerJoin('td.transUnit', 'tu')
+                ->where('td.isDeleted = :isDeleted')
+                ->setParameter('isDeleted', $check)
+                ->getQuery()
+                ->useQueryCache(true)
+                ->getSingleColumnResult();
+
+            if ([] !== $checkFound) {
+                $queryBuilder->andWhere($queryBuilder->expr()->in('e.id', $checkFound));
+            } else {
+                $queryBuilder->andWhere('1 = 0');
+            }
+        }
 
         $collection = $this->applyFilterExtensionsToCollection($queryBuilder, new QueryNameGenerator(), $operation, $context);
         $result = [];
@@ -160,32 +190,61 @@ readonly class TransUnitDataProvider implements ProviderInterface
         return $queryBuilder->getQuery()->getResult();
     }
 
+    private function getLocales(): array
+    {
+        if (null === $this->locales) {
+            if (class_exists(SiteTree::class)) {
+                $trees = $this->entityManager->getRepository(SiteTree::class)->findBy(['parent' => null, 'isActive' => true]);
+                $this->locales = array_map(static fn (SiteTree $tree) => $tree->getSlug(), $trees);
+            } else {
+                $this->locales = [];
+            }
+        }
+
+        return $this->locales;
+    }
+
     private function list(array $uriVariables = []): object|array|null
+    {
+        if (null !== $this->whitedigitalTranslationCache && null !== $this->bag->get('whitedigital.translation.cache_pool')) {
+            return $this->whitedigitalTranslationCache->get('whitedigital.translation.list.' . $uriVariables['locale'], function (ItemInterface $item) use ($uriVariables) {
+                $item->expiresAfter(3600);
+
+                return $this->listData($uriVariables['locale']);
+            });
+        }
+
+        return $this->listData($uriVariables['locale']);
+    }
+
+    private function listData(string $locale): object|array|null
     {
         $transUnits = $this->entityManager->getRepository(TransUnit::class)->createQueryBuilder('tu')
             ->select('tu', 't')
-            ->innerJoin('tu.translations', 't', 'WITH', 't.locale = :locale')
-            ->where('tu.isDeleted = :isDeleted')
-            ->setParameter('locale', $uriVariables['locale'])
-            ->setParameter('isDeleted', false)
+            ->innerJoin('tu.translations', 't')
             ->getQuery()
             ->useQueryCache(true)
             ->getArrayResult();
 
         $result = [];
         foreach ($transUnits as $transUnit) {
-            /** @noinspection PhpPossiblePolymorphicInvocationInspection */
+            if (0 !== $this->entityManager->getRepository(TransUnitIsDeleted::class)->count(['transUnit' => $this->entityManager->getReference(TransUnit::class, $transUnit['id']), 'isDeleted' => true])) {
+                continue;
+            }
+
             $found = false;
             foreach ($transUnit['translations'] as $translation) {
-                $result[$transUnit['domain']][$transUnit['key']] = $translation['content'];
-                if ($uriVariables['locale'] === $translation['locale']) {
+                $result[$translation['locale']][$transUnit['domain']][$transUnit['key']] = $translation['content'];
+                if ($locale === $translation['locale']) {
                     $found = true;
                 }
             }
             if (!$found) {
-                $result[$transUnit['domain']][$transUnit['key']] = $transUnit['key'];
+                $result[$locale][$transUnit['domain']][$transUnit['key']] = '__' . $transUnit['key'];
             }
         }
+
+        $result = $result[$locale];
 
         foreach ($result as $domain => $keys) {
             $matchingKeys = $nonMatchingKeys = [];

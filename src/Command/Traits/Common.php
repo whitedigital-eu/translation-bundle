@@ -2,6 +2,7 @@
 
 namespace WhiteDigital\Translation\Command\Traits;
 
+use Lexik\Bundle\TranslationBundle\Entity\Translation;
 use RuntimeException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -21,7 +22,7 @@ trait Common
     protected function configureCommon(bool $required = true): void
     {
         if (class_exists(SiteTree::class)) {
-            $trees = $this->em->getRepository(SiteTree::class)->findBy(['parent' => null, 'isActive' => true]);
+            $trees = $this->entityManager->getRepository(SiteTree::class)->findBy(['parent' => null, 'isActive' => true]);
             foreach (array_map(static fn (SiteTree $tree) => $tree->getSlug(), $trees) as $locale) {
                 $this->addOption($locale, null, $required ? InputOption::VALUE_REQUIRED : InputOption::VALUE_OPTIONAL, 'File path for ' . $locale . ' translations', null);
             }
@@ -35,7 +36,7 @@ trait Common
     {
         $locales = $paths = [];
         if (class_exists(SiteTree::class)) {
-            $trees = $this->em->getRepository(SiteTree::class)->findBy(['parent' => null, 'isActive' => true]);
+            $trees = $this->entityManager->getRepository(SiteTree::class)->findBy(['parent' => null, 'isActive' => true]);
             foreach (array_map(static fn (SiteTree $tree) => $tree->getSlug(), $trees) as $locale) {
                 $locales[] = $locale;
                 $paths[$locale] = ($file = $input->getOption($locale));
@@ -69,6 +70,17 @@ trait Common
         foreach ($finder as $file) {
             $filePath = $file->getRealPath();
             @unlink($filePath);
+        }
+    }
+
+    private function deleteCache(): void
+    {
+        if (null === $this->whitedigitalTranslationCache || null === $this->bag->get('whitedigital.translation.cache_pool')) {
+            return;
+        }
+
+        foreach ($this->entityManager->getRepository(Translation::class)->createQueryBuilder('t')->select('t.locale')->distinct()->getQuery()->getSingleColumnResult() as $locale) {
+            $this->whitedigitalTranslationCache->delete('list.' . $locale);
         }
     }
 }

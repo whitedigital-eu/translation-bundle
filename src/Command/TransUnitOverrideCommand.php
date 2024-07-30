@@ -12,6 +12,8 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
+use Symfony\Contracts\Cache\CacheInterface;
 use WhiteDigital\EntityResourceMapper\EntityResourceMapperBundle;
 
 use function array_unique;
@@ -35,7 +37,9 @@ class TransUnitOverrideCommand extends Command
     use Traits\Common;
 
     public function __construct(
-        private readonly EntityManagerInterface $em,
+        private readonly EntityManagerInterface $entityManager,
+        private readonly ParameterBagInterface $bag,
+        private readonly ?CacheInterface $whitedigitalTranslationCache = null,
     ) {
         parent::__construct();
     }
@@ -90,6 +94,8 @@ class TransUnitOverrideCommand extends Command
         $output->write($bufferedOutput->fetch());
 
         $this->cleanup();
+
+        $this->deleteCache();
 
         return Command::SUCCESS;
     }

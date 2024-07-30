@@ -13,12 +13,17 @@ use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Finder\Finder;
+use Symfony\Contracts\Cache\CacheInterface;
 use WhiteDigital\EntityResourceMapper\EntityResourceMapperBundle;
+use WhiteDigital\Translation\Entity\TransUnitIsDeleted;
 
+use function array_filter;
 use function array_key_exists;
 use function array_keys;
 use function array_map;
+use function array_merge;
 use function array_shift;
 use function basename;
 use function explode;
@@ -26,6 +31,7 @@ use function file_get_contents;
 use function file_put_contents;
 use function getcwd;
 use function gettype;
+use function in_array;
 use function is_array;
 use function is_dir;
 use function iterator_to_array;
@@ -50,7 +56,9 @@ class TransUnitImportCommand extends Command
     use Traits\Common;
 
     public function __construct(
-        private readonly EntityManagerInterface $em,
+        private readonly EntityManagerInterface $entityManager,
+        private readonly ParameterBagInterface $bag,
+        private readonly ?CacheInterface $whitedigitalTranslationCache = null,
     ) {
         parent::__construct();
     }
@@ -142,35 +150,75 @@ class TransUnitImportCommand extends Command
 
         $this->cleanup();
 
-        foreach ($found as $domain => $keys) {
-            $qb = $this->em->createQueryBuilder();
-            $qb->update(TransUnit::class, 't')
-                ->set('t.isDeleted', ':isDeleted')
-                ->setParameter('isDeleted', false)
-                ->where('t.domain = :domain')
-                ->setParameter('domain', $domain)
-                ->andWhere($qb->expr()->in('t.key', array_keys($keys)))
-                ->getQuery()
-                ->execute();
+        $transUnits = $this->entityManager->getRepository(TransUnit::class)->createQueryBuilder('tu')
+            ->select('tu.id')
+            ->getQuery()
+            ->getSingleColumnResult();
 
-            $qb = $this->em->createQueryBuilder();
-            $qb->update(TransUnit::class, 't')
-                ->set('t.isDeleted', ':isDeleted')
-                ->setParameter('isDeleted', true)
-                ->where('t.domain = :domain')
+        $addOrUpdate = $this->entityManager->getRepository(TransUnitIsDeleted::class)->createQueryBuilder('td')
+            ->select('tu.id')
+            ->innerJoin('td.transUnit', 'tu')
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        $transUnits = array_filter($transUnits, static fn ($transUnit) => !in_array($transUnit, $addOrUpdate, true));
+
+        foreach ($transUnits as $transUnit) {
+            $tu = (new TransUnitIsDeleted())
+                ->setTransUnit($this->entityManager->getReference(TransUnit::class, $transUnit))
+                ->setIsDeleted(false);
+            $this->entityManager->persist($tu);
+        }
+        $this->entityManager->flush();
+
+        $allResultsFound = [];
+        foreach ($found as $domain => $keys) {
+            $qbSelectFound = $this->entityManager->getRepository(TransUnit::class)->createQueryBuilder('tu');
+            $resultSelectFound = $qbSelectFound
+                ->select('tu.id')
+                ->where('tu.domain = :domain')
                 ->setParameter('domain', $domain)
-                ->andWhere($qb->expr()->notIn('t.key', array_keys($keys)))
+                ->andWhere($qbSelectFound->expr()->in('tu.key', array_keys($keys)))
                 ->getQuery()
-                ->execute();
+                ->getSingleColumnResult();
+
+            $allResultsFound[] = $resultSelectFound;
         }
 
-        $qb = $this->em->createQueryBuilder();
-        $qb->update(TransUnit::class, 't')
-            ->set('t.isDeleted', ':isDeleted')
-            ->setParameter('isDeleted', true)
-            ->andWhere($qb->expr()->notIn('t.domain', array_keys($found)))
+        $allResultsFound = array_merge(...$allResultsFound);
+
+        $qbUpdateFound = $this->entityManager->createQueryBuilder();
+        $qbUpdateFound->update(TransUnitIsDeleted::class, 'td')
+            ->set('td.isDeleted', ':isDeleted')
+            ->setParameter('isDeleted', false)
+            ->where($qbUpdateFound->expr()->in('td.transUnit', $allResultsFound))
             ->getQuery()
             ->execute();
+
+        $qbUpdateNotFound = $this->entityManager->createQueryBuilder();
+        $qbUpdateNotFound->update(TransUnitIsDeleted::class, 'td')
+            ->set('td.isDeleted', ':isDeleted')
+            ->setParameter('isDeleted', true)
+            ->where($qbUpdateNotFound->expr()->notIn('td.transUnit', $allResultsFound))
+            ->getQuery()
+            ->execute();
+
+        $qbSelectDomainFound = $this->entityManager->getRepository(TransUnit::class)->createQueryBuilder('tu');
+        $resultSelectDomainFound = $qbSelectDomainFound
+            ->select('tu.id')
+            ->andWhere($qbSelectDomainFound->expr()->in('tu.domain', array_keys($found)))
+            ->getQuery()
+            ->getSingleColumnResult();
+
+        $qb = $this->entityManager->createQueryBuilder();
+        $qb->update(TransUnitIsDeleted::class, 'td')
+            ->set('td.isDeleted', ':isDeleted')
+            ->setParameter('isDeleted', true)
+            ->andWhere($qb->expr()->notIn('td.transUnit', $resultSelectDomainFound))
+            ->getQuery()
+            ->execute();
+
+        $this->deleteCache();
 
         return Command::SUCCESS;
     }
