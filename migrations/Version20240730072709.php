@@ -19,7 +19,7 @@ final class Version20240730072709 extends AbstractMigration
         $this->addSql('CREATE INDEX IDX_3E4923C5FD07C8FB ON lexik_trans_unit_is_deleted (is_deleted)');
         $this->addSql('CREATE INDEX IDX_3E4923C5C3C583C9FD07C8FB ON lexik_trans_unit_is_deleted (trans_unit_id, is_deleted)');
         $this->addSql('ALTER TABLE lexik_trans_unit_is_deleted ADD CONSTRAINT FK_3E4923C5C3C583C9 FOREIGN KEY (trans_unit_id) REFERENCES lexik_trans_unit (id) NOT DEFERRABLE INITIALLY IMMEDIATE');
-        $this->addSql('DROP INDEX idx_trans_unit_is_deleted');
+        $this->addSql('DROP INDEX IF EXISTS idx_trans_unit_is_deleted');
         $this->addSql('ALTER TABLE lexik_trans_unit DROP is_deleted');
         $this->addSql('DROP INDEX IF EXISTS idx_translations_locale');
     }
