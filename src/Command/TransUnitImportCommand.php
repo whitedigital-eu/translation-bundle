@@ -3,8 +3,13 @@
 namespace WhiteDigital\Translation\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Exception\ORMException;
+use InvalidArgumentException;
 use JsonException;
 use Lexik\Bundle\TranslationBundle\Entity\TransUnit;
+use RecursiveDirectoryIterator;
+use RecursiveIteratorIterator;
+use RegexIterator;
 use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -15,6 +20,8 @@ use Symfony\Component\Console\Output\BufferedOutput;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\DependencyInjection\ParameterBag\ParameterBagInterface;
 use Symfony\Component\Finder\Finder;
+use Symfony\Component\Translation\Loader\YamlFileLoader;
+use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Contracts\Cache\CacheInterface;
 use WhiteDigital\EntityResourceMapper\EntityResourceMapperBundle;
 use WhiteDigital\Translation\Entity\TransUnitIsDeleted;
@@ -24,7 +31,9 @@ use function array_key_exists;
 use function array_keys;
 use function array_map;
 use function array_merge;
+use function array_merge_recursive;
 use function array_shift;
+use function array_values;
 use function basename;
 use function explode;
 use function file_get_contents;
@@ -39,9 +48,11 @@ use function json_decode;
 use function json_encode;
 use function json_last_error;
 use function mkdir;
+use function preg_match;
 use function rename;
 use function sprintf;
 use function str_replace;
+use function strtolower;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_ERROR_NONE;
@@ -66,6 +77,7 @@ class TransUnitImportCommand extends Command
     /**
      * @throws ExceptionInterface
      * @throws JsonException
+     * @throws ORMException
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -95,11 +107,6 @@ class TransUnitImportCommand extends Command
                 $content[$domain][$k] = $value;
             }
 
-            foreach ($content as $domain => $translations) {
-                $filePath = $newPath . DIRECTORY_SEPARATOR . $domain . '.' . $locale . '.json';
-                file_put_contents($filePath, json_encode($translations, JSON_THROW_ON_ERROR));
-            }
-
             $arrayInput = new ArrayInput([
                 '--force' => true,
                 '--format' => 'json',
@@ -114,6 +121,11 @@ class TransUnitImportCommand extends Command
             $finder->files()->in(getcwd() . '/translations')->name('*+intl-icu.' . $locale . '.json');
             foreach ($finder as $file) {
                 @rename($file->getRealPath(), str_replace('+intl-icu', '', $file->getRealPath()));
+            }
+
+            foreach ($content as $domain => $translations) {
+                $filePath = $newPath . DIRECTORY_SEPARATOR . $domain . '.' . $locale . '.json';
+                file_put_contents($filePath, json_encode($translations, JSON_THROW_ON_ERROR));
             }
         }
 
@@ -134,6 +146,8 @@ class TransUnitImportCommand extends Command
                 }
             }
         }
+
+        $found = array_merge_recursive($found, array_merge_recursive(...array_values($this->loadTranslations())));
 
         $command = $this->getApplication()?->find('lexik:translations:import');
         $arguments = [
@@ -176,7 +190,7 @@ class TransUnitImportCommand extends Command
             $qbSelectFound = $this->entityManager->getRepository(TransUnit::class)->createQueryBuilder('tu');
             $resultSelectFound = $qbSelectFound
                 ->select('tu.id')
-                ->where('tu.domain = :domain')
+                ->where('LOWER(tu.domain) = LOWER(:domain)')
                 ->setParameter('domain', $domain)
                 ->andWhere($qbSelectFound->expr()->in('tu.key', array_keys($keys)))
                 ->getQuery()
@@ -203,10 +217,12 @@ class TransUnitImportCommand extends Command
             ->getQuery()
             ->execute();
 
+        $foundKeys = array_map(static fn (string $key) => strtolower($key), array_keys($found));
+
         $qbSelectDomainFound = $this->entityManager->getRepository(TransUnit::class)->createQueryBuilder('tu');
         $resultSelectDomainFound = $qbSelectDomainFound
             ->select('tu.id')
-            ->andWhere($qbSelectDomainFound->expr()->in('tu.domain', array_keys($found)))
+            ->andWhere($qbSelectDomainFound->expr()->in('LOWER(tu.domain)', $foundKeys))
             ->getQuery()
             ->getSingleColumnResult();
 
@@ -226,6 +242,34 @@ class TransUnitImportCommand extends Command
     protected function configure(): void
     {
         $this->configureCommon();
+    }
+
+    private function loadTranslations(): array
+    {
+        $loader = new YamlFileLoader();
+        $catalogues = [];
+
+        $directoryIterator = new RecursiveDirectoryIterator($this->bag->get('kernel.project_dir') . '/translations');
+        $iterator = new RecursiveIteratorIterator($directoryIterator);
+        $regexIterator = new RegexIterator($iterator, '/^.+\.(yaml|yml)$/i', RegexIterator::GET_MATCH);
+
+        foreach ($regexIterator as $file) {
+            $filePath = $file[0];
+            try {
+                [$domain, $locale] = $this->getDomainAndLocaleFromPath($filePath);
+            } catch (InvalidArgumentException) {
+                continue;
+            }
+
+            if (!isset($catalogues[$locale])) {
+                $catalogues[$locale] = new MessageCatalogue($locale);
+            }
+
+            $resource = $loader->load($filePath, $locale, $domain);
+            $catalogues[$locale]->addCatalogue($resource);
+        }
+
+        return $this->convertCataloguesToArray($catalogues);
     }
 
     private function jsonStructureCompare(array $jsonFiles): bool
@@ -281,5 +325,30 @@ class TransUnitImportCommand extends Command
         }
 
         return $result;
+    }
+
+    private function getDomainAndLocaleFromPath(string $filePath): array
+    {
+        $fileName = basename($filePath, '.yaml');
+        $fileName = basename($fileName, '.yml');
+
+        if (preg_match('/^(?P<domain>.+)\.(?P<locale>[a-z]{2,3})$/i', $fileName, $matches)) {
+            return [$matches['domain'], $matches['locale']];
+        }
+
+        throw new InvalidArgumentException("Invalid file name format: $fileName");
+    }
+
+    private function convertCataloguesToArray(array $catalogues): array
+    {
+        $translations = [];
+
+        foreach ($catalogues as $locale => $catalogue) {
+            foreach ($catalogue->all() as $domain => $messages) {
+                $translations[$locale][$domain] = $messages;
+            }
+        }
+
+        return $translations;
     }
 }
