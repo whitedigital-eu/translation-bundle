@@ -60,18 +60,18 @@ final readonly class TotalCountEventSubscriber implements EventSubscriberInterfa
             $previousView = $nextView = $firstView = $lastView = $pager;
 
             $page = ($pager['page'] ?? 1);
+            $firstView['page'] = 1;
+            $data['hydra:view']['hydra:first'] = $uri . '?' . http_build_query($firstView);
             if (1 < $page) {
-                $firstView['page'] = 1;
                 $previousView['page'] = $page - 1;
-                $data['hydra:view']['hydra:first'] = $uri . '?' . http_build_query($firstView);
                 $data['hydra:view']['hydra:previous'] = $uri . '?' . http_build_query($previousView);
             }
 
             $total = ceil($this->count->getCount() / ($pager['itemsPerPage'] ?? 30));
+            $lastView['page'] = $total;
+            $data['hydra:view']['hydra:last'] = $uri . '?' . http_build_query($lastView);
             if ($total > $page) {
-                $lastView['page'] = $total;
                 $nextView['page'] = $page + 1;
-                $data['hydra:view']['hydra:last'] = $uri . '?' . http_build_query($lastView);
                 $data['hydra:view']['hydra:next'] = $uri . '?' . http_build_query($nextView);
             }
 
