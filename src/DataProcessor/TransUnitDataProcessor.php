@@ -9,6 +9,7 @@ use ApiPlatform\State\ProcessorInterface;
 use Doctrine\DBAL\Exception;
 use Doctrine\ORM\EntityManagerInterface;
 use Lexik\Bundle\TranslationBundle\Entity\Translation;
+use Lexik\Bundle\TranslationBundle\Manager\LocaleManagerInterface;
 use Lexik\Bundle\TranslationBundle\Manager\TransUnitManagerInterface;
 use Psr\Container\ContainerExceptionInterface;
 use Psr\Container\NotFoundExceptionInterface;
@@ -42,6 +43,7 @@ class TransUnitDataProcessor implements ProcessorInterface
         protected readonly AuthorizationService $authorizationService,
         protected readonly TranslatorInterface $translator,
         protected readonly ParameterBagInterface $bag,
+        protected readonly LocaleManagerInterface $localeManager,
         private readonly ?CacheInterface $whitedigitalTranslationCache = null,
     ) {
     }
@@ -184,6 +186,7 @@ class TransUnitDataProcessor implements ProcessorInterface
 
     private function deleteCache(): void
     {
+        $this->translator->removeLocalesCacheFiles($this->localeManager->getLocales());
         if (null === $this->whitedigitalTranslationCache || null === $this->bag->get('whitedigital.translation.cache_pool')) {
             return;
         }
