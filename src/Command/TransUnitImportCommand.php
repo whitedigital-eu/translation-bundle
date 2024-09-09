@@ -78,6 +78,7 @@ class TransUnitImportCommand extends Command
      * @throws ExceptionInterface
      * @throws JsonException
      * @throws ORMException
+     * @throws \Psr\Cache\InvalidArgumentException
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

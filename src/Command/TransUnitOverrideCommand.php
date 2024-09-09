@@ -4,6 +4,7 @@ namespace WhiteDigital\Translation\Command;
 
 use Doctrine\ORM\EntityManagerInterface;
 use JsonException;
+use Psr\Cache\InvalidArgumentException;
 use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -47,6 +48,7 @@ class TransUnitOverrideCommand extends Command
     /**
      * @throws ExceptionInterface
      * @throws JsonException
+     * @throws InvalidArgumentException
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {

@@ -3,6 +3,7 @@
 namespace WhiteDigital\Translation\Command\Traits;
 
 use Lexik\Bundle\TranslationBundle\Entity\Translation;
+use Psr\Cache\InvalidArgumentException;
 use RuntimeException;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
@@ -73,6 +74,9 @@ trait Common
         }
     }
 
+    /**
+     * @throws InvalidArgumentException
+     */
     private function deleteCache(): void
     {
         if (null === $this->whitedigitalTranslationCache || null === $this->bag->get('whitedigital.translation.cache_pool')) {
@@ -80,7 +84,7 @@ trait Common
         }
 
         foreach ($this->entityManager->getRepository(Translation::class)->createQueryBuilder('t')->select('t.locale')->distinct()->getQuery()->getSingleColumnResult() as $locale) {
-            $this->whitedigitalTranslationCache->delete('list.' . $locale);
+            $this->whitedigitalTranslationCache->delete('whitedigital.translation.list.' . $locale);
         }
     }
 }
