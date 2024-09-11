@@ -43,6 +43,7 @@ use function gettype;
 use function in_array;
 use function is_array;
 use function is_dir;
+use function is_file;
 use function iterator_to_array;
 use function json_decode;
 use function json_encode;
@@ -53,6 +54,7 @@ use function rename;
 use function sprintf;
 use function str_replace;
 use function strtolower;
+use function unlink;
 
 use const DIRECTORY_SEPARATOR;
 use const JSON_ERROR_NONE;
@@ -121,11 +123,31 @@ class TransUnitImportCommand extends Command
             $finder = new Finder();
             $finder->files()->in(getcwd() . '/translations')->name('*+intl-icu.' . $locale . '.json');
             foreach ($finder as $file) {
-                @rename($file->getRealPath(), str_replace('+intl-icu', '', $file->getRealPath()));
+                $filePath = str_replace('+intl-icu', '', $file->getRealPath());
+                if (is_file($filePath)) {
+                    $domain = str_replace(sprintf('%s.json', $locale), '', $filePath);
+                    foreach ($this->readJsonFiles([$filePath], $locale)[$domain] ?? [] as $key => $value) {
+                        if (!array_key_exists($key, $content[$domain])) {
+                            $content[$domain][$key] = $value;
+                        }
+                    }
+                    @unlink($file->getRealPath());
+                    continue;
+                }
+
+                @rename($file->getRealPath(), $filePath);
             }
 
             foreach ($content as $domain => $translations) {
                 $filePath = $newPath . DIRECTORY_SEPARATOR . $domain . '.' . $locale . '.json';
+                if (is_file($filePath)) {
+                    foreach ($this->readJsonFiles([$filePath], $locale)[$domain] ?? [] as $key => $value) {
+                        if (!array_key_exists($key, $translations)) {
+                            $translations[$key] = $value;
+                        }
+                    }
+                }
+
                 file_put_contents($filePath, json_encode($translations, JSON_THROW_ON_ERROR));
             }
         }
