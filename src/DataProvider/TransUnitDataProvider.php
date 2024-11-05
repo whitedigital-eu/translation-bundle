@@ -244,7 +244,7 @@ class TransUnitDataProvider implements ProviderInterface
             }
         }
 
-        $result = $result[$locale];
+        $result = $result[$locale] ?? [];
 
         foreach ($result as $domain => $keys) {
             $matchingKeys = $nonMatchingKeys = [];
