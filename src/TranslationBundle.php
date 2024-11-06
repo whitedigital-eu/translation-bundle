@@ -13,6 +13,8 @@ use WhiteDigital\Translation\DependencyInjection\CompilerPass\TranslationCacheCo
 
 use function array_key_exists;
 use function array_merge_recursive;
+use function array_unique;
+use function is_array;
 
 class TranslationBundle extends AbstractBundle
 {
@@ -24,6 +26,15 @@ class TranslationBundle extends AbstractBundle
         'dir' => __DIR__ . '/Entity',
         'alias' => 'Translation',
         'prefix' => 'WhiteDigital\Translation\Entity',
+        'is_bundle' => false,
+        'mapping' => true,
+    ];
+
+    private const GEDMO_MAPPINGS = [
+        'type' => 'attribute',
+        'dir' => '%kernel.project_dir%/vendor/gedmo/doctrine-extensions/src/Translatable/Entity',
+        'alias' => 'Gedmo',
+        'prefix' => 'Gedmo\Translatable\Entity',
         'is_bundle' => false,
         'mapping' => true,
     ];
@@ -44,12 +55,14 @@ class TranslationBundle extends AbstractBundle
 
         /* @deprecated */
         $this->addDoctrineConfig($container, $manager, 'Translation', self::MAPPINGS);
+        $this->addDoctrineConfig($container, $manager, 'Gedmo', self::GEDMO_MAPPINGS);
         $this->addDoctrineConfig($container, $manager, 'LexikTranslationBundle', []);
 
         if ([] !== $auditExtensionConfig) {
             $mappings = $this->getOrmMappings($builder, $auditExtensionConfig['default_entity_manager'] ?? 'default');
             /* @deprecated */
             $this->addDoctrineConfig($container, $auditExtensionConfig['audit_entity_manager'] ?? 'audit', 'Translation', self::MAPPINGS, $mappings);
+            $this->addDoctrineConfig($container, $auditExtensionConfig['audit_entity_manager'] ?? 'audit', 'Gedmo', self::GEDMO_MAPPINGS, $mappings);
             $this->addDoctrineConfig($container, $auditExtensionConfig['audit_entity_manager'] ?? 'audit', 'LexikTranslationBundle', []);
         }
 
@@ -61,15 +74,34 @@ class TranslationBundle extends AbstractBundle
             ]);
         }
 
+        $locale = self::getLocale($builder);
         if ($builder->hasExtension('lexik_translation')) {
             $container->extension('lexik_translation', [
-                'fallback_locale' => $extensionConfig['locale'] ?? 'lv',
+                'fallback_locale' => $extensionConfig['locale'] ?? $locale,
                 'managed_locales' => [
-                    $extensionConfig['locale'] ?? 'lv',
+                    $extensionConfig['locale'] ?? $locale,
                 ],
             ]);
         }
 
+        if ($builder->hasExtension('framework')) {
+            $container->extension('framework', [
+                'set_locale_from_accept_language' => true,
+            ]);
+        }
+
+        $stof = [
+            'orm' => [
+                $manager => [
+                    'translatable' => true,
+                ],
+            ],
+            'translation_fallback' => $extensionConfig['translation_fallback'] ?? false,
+        ];
+
+        $stof['default_locale'] = $locale;
+
+        $container->extension('stof_doctrine_extensions', $stof);
         $this->configureApiPlatformExtension($container, $extensionConfig);
     }
 
@@ -78,6 +110,15 @@ class TranslationBundle extends AbstractBundle
         foreach (EntityResourceMapperBundle::makeOneDimension(['whitedigital.translation' => $config]) as $key => $value) {
             $builder->setParameter($key, $value);
         }
+
+        $managedLocales = $builder->getParameter('whitedigital.translation.managed_locales');
+        if (!is_array($managedLocales)) {
+            $managedLocales = [];
+        }
+
+        /* @var array $managedLocales */
+        $managedLocales[] = $builder->getParameter('whitedigital.translation.locale');
+        $builder->setParameter('whitedigital.translation.managed_locales', array_unique($managedLocales));
 
         $container->import('../config/services.php');
     }
@@ -94,12 +135,33 @@ class TranslationBundle extends AbstractBundle
                 ->scalarNode('custom_api_resource_path')->defaultNull()->end()
                 ->scalarNode('locale')->defaultValue('lv')->info('default_locale')->end()
                 ->scalarNode('cache_pool')->defaultNull()->end()
+                ->booleanNode('translation_fallback')->defaultFalse()->end()
+                ->arrayNode('managed_locales')
+                    ->scalarPrototype()->end()
+                ->end()
             ->end();
     }
 
     public function build(ContainerBuilder $container): void
     {
         $container->addCompilerPass(new TranslationCacheCompilerPass());
+    }
+
+    public static function getLocale(ContainerBuilder $builder): ?string
+    {
+        $framework = self::getConfig('framework', $builder);
+        $locale = $framework['default_locale'];
+        if (str_contains($locale, '%') && !str_contains($locale, '%env')) {
+            if ($builder->hasParameter($key = strtr($locale, ['%' => '']))) {
+                $locale = $builder->getParameter($key);
+            }
+        }
+
+        if (str_contains($locale, '%env')) {
+            $locale = $_ENV[strtr($locale, ['%env(' => '', ')%' => ''])] ?? null;
+        }
+
+        return $locale ?? 'lv';
     }
 
     private function configureApiPlatformExtension(ContainerConfigurator $container, array $extensionConfig): void

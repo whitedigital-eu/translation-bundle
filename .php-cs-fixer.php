@@ -11,11 +11,13 @@ $finder = Finder::create()
 return (new Config())
     ->setParallelConfig(ParallelConfigFactory::detect())
     ->setRules(rules: [
-        '@PER' => true,
-        '@PER:risky' => true,
+        '@PER-CS' => true,
+        '@PER-CS:risky' => true,
         '@PHP80Migration:risky' => true,
         '@PHP81Migration' => true,
         '@PHP82Migration' => true,
+        '@PHP83Migration' => true,
+        '@PHPUnit100Migration:risky' => true,
         '@Symfony' => true,
         '@Symfony:risky' => true,
         'binary_operator_spaces' => true,
@@ -37,17 +39,16 @@ return (new Config())
         'multiline_whitespace_before_semicolons' => ['strategy' => 'no_multi_line', ],
         'native_constant_invocation' => false,
         'native_function_invocation' => false,
-        'native_function_type_declaration_casing' => true,
+        'native_type_declaration_casing' => true,
         'no_alias_functions' => ['sets' => ['@all', ], ],
         'no_blank_lines_after_class_opening' => true,
         'no_superfluous_elseif' => true,
         'no_superfluous_phpdoc_tags' => ['allow_mixed' => true, 'remove_inheritdoc' => true, ],
         'no_trailing_comma_in_singleline' => ['elements' => [], ],
-        'no_unneeded_curly_braces' => true,
+        'no_unneeded_braces' => true,
         'no_unset_on_property' => true,
         'no_useless_else' => true,
         'no_useless_sprintf' => true,
-        'nullable_type_declaration_for_default_null_value' => ['use_nullable_type_declaration' => true, ],
         'ordered_class_elements' => ['sort_algorithm' => 'none', ],
         'ordered_imports' => ['sort_algorithm' => 'alpha', 'imports_order' => ['class', 'function', 'const', ], ],
         'protected_to_private' => false,
@@ -59,7 +60,7 @@ return (new Config())
         'trailing_comma_in_multiline' => ['elements' => ['arrays', 'arguments', 'parameters', 'match', ], ],
         'types_spaces' => ['space' => 'none', ],
         'yoda_style' => true,
-    ], )
-    ->setRiskyAllowed(isRiskyAllowed: true, )
-    ->setCacheFile(cacheFile: getcwd() . '/.php-cs-fixer.cache', )
+    ])
+    ->setRiskyAllowed(isRiskyAllowed: true)
+    ->setCacheFile(cacheFile: getcwd() . '/.php-cs-fixer.cache')
     ->setFinder(finder: $finder);

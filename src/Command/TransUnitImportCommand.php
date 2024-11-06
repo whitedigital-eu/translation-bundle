@@ -74,6 +74,7 @@ class TransUnitImportCommand extends Command
         private readonly ?CacheInterface $whitedigitalTranslationCache = null,
     ) {
         parent::__construct();
+        $this->setDefaultLocale();
     }
 
     /**
@@ -257,6 +258,7 @@ class TransUnitImportCommand extends Command
             ->getQuery()
             ->execute();
 
+        $this->migrate();
         $this->deleteCache();
 
         return Command::SUCCESS;
