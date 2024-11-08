@@ -38,7 +38,9 @@ readonly class TranslatablePropertyMetadataFactory implements PropertyMetadataFa
             $entityReflection = new ReflectionClass($this->classMapper->byResource($resourceClass));
 
             if ($entityReflection->hasProperty($property) && [] !== $entityReflection->getProperty($property)->getAttributes(Translatable::class)) {
-                return $apiProperty->withOpenapiContext(['format' => 'translatable']);
+                $openApiContext = $apiProperty->getOpenApiContext() ?? [];
+
+                return $apiProperty->withOpenapiContext(array_merge($openApiContext, ['format' => 'translatable']));
             }
 
             return $apiProperty;
