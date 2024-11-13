@@ -2,6 +2,9 @@
 
 namespace WhiteDigital\Translation\Event;
 
+/**
+ * @deprecated
+ */
 class TranslationUpdatedEvent
 {
     public const EVENT = 'translation.updated';

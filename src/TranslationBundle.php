@@ -9,7 +9,9 @@ use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
 use WhiteDigital\EntityResourceMapper\DependencyInjection\Traits\DefineApiPlatformMappings;
 use WhiteDigital\EntityResourceMapper\DependencyInjection\Traits\DefineOrmMappings;
 use WhiteDigital\EntityResourceMapper\EntityResourceMapperBundle;
+use WhiteDigital\Translation\DependencyInjection\CompilerPass\TranslationCacheCompilerPass;
 
+use function array_key_exists;
 use function array_merge_recursive;
 
 class TranslationBundle extends AbstractBundle
@@ -40,11 +42,32 @@ class TranslationBundle extends AbstractBundle
 
         $manager = $extensionConfig['entity_manager'] ?? 'default';
 
+        /* @deprecated */
         $this->addDoctrineConfig($container, $manager, 'Translation', self::MAPPINGS);
+        $this->addDoctrineConfig($container, $manager, 'LexikTranslationBundle', []);
 
         if ([] !== $auditExtensionConfig) {
             $mappings = $this->getOrmMappings($builder, $auditExtensionConfig['default_entity_manager'] ?? 'default');
+            /* @deprecated */
             $this->addDoctrineConfig($container, $auditExtensionConfig['audit_entity_manager'] ?? 'audit', 'Translation', self::MAPPINGS, $mappings);
+            $this->addDoctrineConfig($container, $auditExtensionConfig['audit_entity_manager'] ?? 'audit', 'LexikTranslationBundle', []);
+        }
+
+        if ($builder->hasExtension('doctrine_migrations')) {
+            $container->extension('doctrine_migrations', [
+                'migrations_paths' => [
+                    'WhiteDigital\\Translation\\Migrations' => '%kernel.project_dir%/vendor/whitedigital-eu/translation-bundle/migrations',
+                ],
+            ]);
+        }
+
+        if ($builder->hasExtension('lexik_translation')) {
+            $container->extension('lexik_translation', [
+                'fallback_locale' => $extensionConfig['locale'] ?? 'lv',
+                'managed_locales' => [
+                    $extensionConfig['locale'] ?? 'lv',
+                ],
+            ]);
         }
 
         $this->configureApiPlatformExtension($container, $extensionConfig);
@@ -68,14 +91,15 @@ class TranslationBundle extends AbstractBundle
             ->addDefaultsIfNotSet()
             ->children()
                 ->scalarNode('entity_manager')->defaultValue('default')->end()
-                ->arrayNode('domains')
-                    ->scalarPrototype()->end()
-                ->end()
-                ->arrayNode('locales')
-                    ->scalarPrototype()->end()
-                ->end()
                 ->scalarNode('custom_api_resource_path')->defaultNull()->end()
+                ->scalarNode('locale')->defaultValue('lv')->info('default_locale')->end()
+                ->scalarNode('cache_pool')->defaultNull()->end()
             ->end();
+    }
+
+    public function build(ContainerBuilder $container): void
+    {
+        $container->addCompilerPass(new TranslationCacheCompilerPass());
     }
 
     private function configureApiPlatformExtension(ContainerConfigurator $container, array $extensionConfig): void

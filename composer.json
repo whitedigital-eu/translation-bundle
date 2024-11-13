@@ -17,17 +17,23 @@
         "doctrine/doctrine-bundle": "*",
         "doctrine/orm": "*",
         "doctrine/persistence": "*",
+        "lexik/translation-bundle": "*",
+        "symfony/cache": "*",
+        "symfony/cache-contracts": "*",
         "symfony/config": "*",
         "symfony/console": "*",
         "symfony/dependency-injection": "*",
         "symfony/event-dispatcher": "*",
         "symfony/filesystem": "*",
+        "symfony/finder": "*",
+        "symfony/form": "*",
         "symfony/http-kernel": "*",
         "symfony/serializer": "*",
         "symfony/service-contracts": "*",
         "symfony/translation": "*",
         "symfony/validator": "*",
-        "whitedigital-eu/entity-resource-mapper-bundle": "^0.23|^0.24"
+        "symfony/yaml": "*",
+        "whitedigital-eu/entity-resource-mapper-bundle": "^0.24"
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "*",
@@ -48,5 +54,8 @@
         "branch-alias": {
             "dev-main": "0.2.x-dev"
         }
+    },
+    "conflict": {
+        "friendsofphp/php-cs-fixer": "<3.57.0"
     }
 }

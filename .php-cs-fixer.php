@@ -2,12 +2,14 @@
 
 use PhpCsFixer\Config;
 use PhpCsFixer\Finder;
+use PhpCsFixer\Runner\Parallel\ParallelConfigFactory;
 
 $finder = Finder::create()
     ->in(dirs: [getcwd(), ])
     ->exclude(dirs: ['vendor', 'var', '.github', ]);
 
 return (new Config())
+    ->setParallelConfig(ParallelConfigFactory::detect())
     ->setRules(rules: [
         '@PER' => true,
         '@PER:risky' => true,
@@ -59,5 +61,5 @@ return (new Config())
         'yoda_style' => true,
     ], )
     ->setRiskyAllowed(isRiskyAllowed: true, )
-    ->setCacheFile(cacheFile: getcwd() . '.php-cs-fixer.cache', )
+    ->setCacheFile(cacheFile: getcwd() . '/.php-cs-fixer.cache', )
     ->setFinder(finder: $finder);
