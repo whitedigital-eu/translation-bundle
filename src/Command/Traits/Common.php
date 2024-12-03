@@ -57,17 +57,17 @@ trait Common
                 $locales[] = $locale;
                 $paths[$locale] = ($file = $input->getOption($locale));
                 if ((null === $file) && $required) {
-                    throw new RuntimeException();
+                    throw new RuntimeException('missing locale: ' . $locale);
                 }
             }
             if ($required && count($locales) !== count($trees)) {
-                throw new RuntimeException();
+                throw new RuntimeException('missing locales or paths');
             }
         } else {
             $locales = explode(',', $input->getOption('locales') ?? '');
             $paths = explode(',', $input->getOption('files') ?? '');
             if (count($locales) !== count($paths)) {
-                throw new RuntimeException();
+                throw new RuntimeException('wrong locales');
             }
 
             $paths = array_combine($locales, $paths);
