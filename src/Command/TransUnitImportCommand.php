@@ -23,6 +23,7 @@ use Symfony\Component\Finder\Finder;
 use Symfony\Component\Translation\Loader\YamlFileLoader;
 use Symfony\Component\Translation\MessageCatalogue;
 use Symfony\Contracts\Cache\CacheInterface;
+use Throwable;
 use WhiteDigital\EntityResourceMapper\EntityResourceMapperBundle;
 use WhiteDigital\Translation\Entity\TransUnitIsDeleted;
 
@@ -74,6 +75,7 @@ class TransUnitImportCommand extends Command
         private readonly ?CacheInterface $whitedigitalTranslationCache = null,
     ) {
         parent::__construct();
+        $this->setDefaultLocale();
     }
 
     /**
@@ -106,8 +108,10 @@ class TransUnitImportCommand extends Command
 
             $content = [];
             foreach ($translations as $key => $value) {
-                [$domain, $k] = explode('.', $key, 2);
-                $content[$domain][$k] = $value;
+                try {
+                    [$domain, $k] = explode('.', $key, 2);
+                    $content[$domain][$k] = $value;
+                } catch (Throwable){}
             }
 
             $arrayInput = new ArrayInput([
@@ -257,6 +261,7 @@ class TransUnitImportCommand extends Command
             ->getQuery()
             ->execute();
 
+        $this->migrate();
         $this->deleteCache();
 
         return Command::SUCCESS;
